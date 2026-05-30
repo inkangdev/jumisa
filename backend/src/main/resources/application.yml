@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: jumisa-backend
+
+  # === Supabase(Postgres) 연결 ===
+  # 실제 값은 .env 에 둔다 (.env 는 git 에 커밋되지 않음).
+  # Supabase 대시보드 → Project Settings → Database → Connection string 에서 복사.
+  datasource:
+    url: ${SUPABASE_DB_URL}          # 예: jdbc:postgresql://db.xxxx.supabase.co:5432/postgres?sslmode=require
+    username: ${SUPABASE_DB_USER}    # 보통 postgres (pooler 사용 시 postgres.<project-ref>)
+    password: ${SUPABASE_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      # Supabase Supavisor(트랜잭션 모드, 6543) 사용 시 아래 두 줄 주석 해제 필요:
+      # data-source-properties:
+      #   prepareThreshold: 0   # prepared statement 비활성화
+
+  jpa:
+    hibernate:
+      # 스키마는 공유 Supabase 에서 직접 관리(SQL 에디터 등). Hibernate 는 스키마를 건드리지 않음.
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    open-in-view: false
+
+  # === Spring Batch ===
+  batch:
+    jdbc:
+      # 최초 실행 시 BATCH_* 메타데이터 테이블 자동 생성
+      initialize-schema: always
+    job:
+      # 앱 부팅 시 배치 job 자동 실행 막음 (스케줄러로 트리거할 예정)
+      enabled: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# 헬스체크 등 운영 엔드포인트
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
