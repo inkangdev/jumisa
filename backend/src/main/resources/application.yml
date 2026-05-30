@@ -35,6 +35,14 @@ spring:
       # 앱 부팅 시 배치 job 자동 실행 막음 (스케줄러로 트리거할 예정)
       enabled: false
 
+# === 한국투자증권(KIS) Open API ===
+kis:
+  env: ${KIS_ENV:vts}
+  app-key: ${KIS_APP_KEY:}
+  app-secret: ${KIS_APP_SECRET:}
+  account-no: ${KIS_ACCOUNT_NO:}
+  account-product-code: ${KIS_ACCOUNT_PRODUCT_CODE:01}
+
 server:
   port: ${SERVER_PORT:8080}
 
