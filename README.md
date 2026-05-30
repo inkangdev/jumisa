@@ -1,2 +1,2 @@
 # jumisa
-A gathering of stock-crazed people
+A gathering of stock-crazed people.
