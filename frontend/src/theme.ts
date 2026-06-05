@@ -1,0 +1,23 @@
+// Jumisa 디자인 토큰 (화면기획서 초안 기준)
+export const T = {
+  bg: "#080C18",
+  card: "#0F1628",
+  card2: "#141C30",
+  border: "#1E2A40",
+  accent: "#4F8EF7",
+  accentL: "#7CB3FF",
+  accentBg: "rgba(79,142,247,0.10)",
+  green: "#22C77A",
+  greenBg: "rgba(34,199,122,0.10)",
+  red: "#F05454",
+  redBg: "rgba(240,84,84,0.10)",
+  amber: "#F5A623",
+  amberBg: "rgba(245,166,35,0.10)",
+  purple: "#A78BFA",
+  purpleBg: "rgba(167,139,250,0.10)",
+  text: "#EDF2FF",
+  sub: "#7A8EAA",
+  mute: "#2E3D55",
+  mono: "'JetBrains Mono', monospace",
+  sans: "'Noto Sans KR', sans-serif",
+} as const;
