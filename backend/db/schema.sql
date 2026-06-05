@@ -141,3 +141,16 @@ create table if not exists undervalue_score (
 comment on table undervalue_score is '저평가 점수/랭킹 히스토리 (순위 추이). 적재 로직은 PER/PBR 가중치 확정 후 구현.';
 
 create index if not exists idx_uvscore_date_rank on undervalue_score (base_date, rank);
+
+-- ─────────────────────────────────────────────
+-- 6) 회원 (Spring Security 세션 인증)
+-- ─────────────────────────────────────────────
+create table if not exists member (
+    id          bigint generated always as identity primary key,
+    username    varchar(30)  not null unique,         -- 닉네임 (로그인 ID)
+    password    varchar(100) not null,                -- BCrypt 해시
+    avatar      varchar(8),                            -- 이모지 아바타
+    created_at  timestamptz  not null default now()
+);
+
+comment on table member is '회원 (Spring Security 세션 인증). password 는 BCrypt 해시.';
