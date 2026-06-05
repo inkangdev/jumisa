@@ -74,14 +74,23 @@ Supabase 적용·검증 완료 (node+pg 마이그레이션):
 - 스로틀: 초당 ~15건 RateLimiter, `EGW00201` 재시도.
 - `@Scheduled`(Asia/Seoul) + JobLauncher. `batch.job.enabled=false` 유지.
 
-## 남은 구현 (TODO)
+## 구현 진척
 
-- [ ] `KisClient` 보강: 토큰 영속 캐시 + 만료 갱신, 현재가 타입 파싱(DTO), 마스터 파일 다운로드·파싱(cp949 고정폭)
-- [ ] JPA 엔티티/리포지토리: `Stock`, `StockFinancials`, `StockPriceSnapshot`, `StockDaily`
-- [x] 마스터 시드: 보통주 2,535종목(KOSPI 808 + KOSDAQ 1,727) → `stock` 적재 완료 (수동 1회, API 0콜). 재무·sector(업종명)는 추후 보강
-- [ ] Batch Job 6종 + 스케줄러
-- [ ] 휴장일 캐시
-- [ ] 수동 트리거 dev 엔드포인트로 소수 종목 검증 → 전체 확장
+- [x] `KisClient` 보강: 토큰 **파일 영속 캐시 + 만료 직전 갱신**, 현재가 타입 파싱(`CurrentPrice` DTO), `RateLimiter`(초당 유량)
+- [x] 마스터 파서 `KisMasterClient`: cp949 고정폭 파싱(공식 레이아웃 포팅), 보통주 필터
+- [x] 데이터 접근: **JdbcTemplate 채택**(JPA 대신, 외부관리 스키마 ETL에 적합) — `StockRepository`, `PriceRepository`, `PriceSnapshot`
+- [x] `stockMasterJob`: 마스터 파일 → `stock` upsert. **실행·검증 완료**(2,535종목, 수동 시드와 일치)
+- [x] `priceSnapshotJob`: 거래가능 종목 순회 → 현재가 → `stock_price_snapshot`. 종목별 실패 스킵. (코드 완성, 실폴링은 prod 앱키 시점)
+- [x] `BatchScheduler`(Asia/Seoul, 주말 제외, **기본 off** `jumisa.batch.scheduler-enabled`): 마스터 08:00 / 시세 09~15시 매시 / 정리 04:30(7일)
+- [x] 수동 트리거 `DevBatchController` (`POST /dev/batch/master|price`)
+- [x] 마스터 시드(수동 1회) — 이후 `stockMasterJob`으로 정식화됨
+
+### 남은 TODO
+
+- [ ] **실전(prod) 앱키** 발급·`.env` 반영 후 시세 폴링 전체 검증
+- [ ] `closingJob`(일봉 `stock_daily` 적재) + 분기 `financeJob`(재무비율 보강)
+- [ ] 휴장일 캐시(`chk-holiday` 연동) → 스케줄러 게이트
+- [ ] 재무·sector(업종명) 보강(`sector_code` 마스터)
 
 ## 미결 / 주의
 

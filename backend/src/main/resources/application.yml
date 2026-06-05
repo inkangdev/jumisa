@@ -42,6 +42,14 @@ kis:
   app-secret: ${KIS_APP_SECRET:}
   account-no: ${KIS_ACCOUNT_NO:}
   account-product-code: ${KIS_ACCOUNT_PRODUCT_CODE:01}
+  rate-per-second: ${KIS_RATE_PER_SECOND:8}
+  token-cache-path: ${KIS_TOKEN_CACHE_PATH:}
+
+# === Jumisa 배치 ===
+jumisa:
+  batch:
+    # 스케줄러는 기본 비활성. 운영에서 true 로 켜면 장중 시세/마스터 배치가 자동 실행됨.
+    scheduler-enabled: ${BATCH_SCHEDULER_ENABLED:false}
 
 server:
   port: ${SERVER_PORT:8080}

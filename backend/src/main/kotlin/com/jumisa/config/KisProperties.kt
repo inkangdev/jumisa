@@ -13,6 +13,10 @@ data class KisProperties(
     val appSecret: String = "",
     val accountNo: String = "",
     val accountProductCode: String = "01",
+    /** REST 호출 유량 제한 (초당 건수). 실전 권장 ~15, 모의 더 낮게. */
+    val ratePerSecond: Double = 8.0,
+    /** 접근 토큰 영속 캐시 파일 경로. 비우면 임시 디렉토리에 생성. */
+    val tokenCachePath: String = "",
 ) {
     fun baseUrl(): String = when (env.lowercase()) {
         "prod", "real" -> "https://openapi.koreainvestment.com:9443"
