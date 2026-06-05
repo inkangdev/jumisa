@@ -11,7 +11,8 @@
 
 ## 한 일
 
-- `src/screens/LoginScreen.tsx` — 로그인 화면(타입 적용): 로고, 아바타 8종 선택, 닉네임/비밀번호 입력, "대결 시작하기" 버튼, 카카오·네이버 소셜 버튼, 가입 혜택 배너. 로그인은 `onLogin` 콜백 stub.
+- `src/screens/LoginScreen.tsx` — 로그인 화면(타입 적용): 로고, 아바타 8종 선택, 닉네임/비밀번호 입력, "로그인" 버튼. 로그인은 `onLogin` 콜백 stub.
+  - ※ 소셜(카카오/네이버)·가입 혜택 배너·"대결 시작하기" 브랜딩은 **추후 개발 시 반영**하기로 제외.
 - `src/theme.ts` — 디자인 토큰(`T`) 분리.
 - `src/App.tsx` — 웹 풀페이지 중앙 정렬(max-width 400) 안에 로그인 화면 렌더. (※ 초안의 폰 프레임 목업은 디자인 미리보기용이라 웹에선 제외)
 - `index.html` — 구글폰트(Noto Sans KR + JetBrains Mono) `<link>` 추가, title `Jumisa`, lang `ko`.

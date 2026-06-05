@@ -25,11 +25,6 @@ export default function LoginScreen({ onLogin }: Props) {
     { label: "비밀번호", val: pw, set: setPw, type: "password", ph: "비밀번호" },
   ] as const;
 
-  const socials: [string, string, string, string][] = [
-    ["🟡", "#FEE500", "#000", "카카오"],
-    ["🟢", "#03C75A", "#fff", "네이버"],
-  ];
-
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
         {/* 로고 */}
@@ -105,47 +100,8 @@ export default function LoginScreen({ onLogin }: Props) {
             boxShadow: "0 6px 20px rgba(79,142,247,0.3)",
           }}
         >
-          대결 시작하기 ⚔️
+          로그인
         </button>
-
-        {/* 소셜 로그인 */}
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          {socials.map(([emoji, bg, color, label]) => (
-            <button
-              key={label}
-              onClick={() => onLogin?.({ name: "소셜유저", email: "social@jumisa.kr", avatar: "🦊" })}
-              style={{
-                flex: 1,
-                padding: "11px 0",
-                borderRadius: 12,
-                border: "none",
-                background: bg,
-                color,
-                fontFamily: T.sans,
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: "pointer",
-              }}
-            >
-              {emoji} {label}
-            </button>
-          ))}
-        </div>
-
-        {/* 가입 혜택 배너 */}
-        <div
-          style={{
-            marginTop: 12,
-            background: T.accentBg,
-            borderRadius: 12,
-            padding: "10px 14px",
-            fontSize: 11,
-            color: T.accentL,
-            textAlign: "center",
-          }}
-        >
-          🎁 가입 즉시 <b>1,000,000P</b> + 대결방 자동 참가!
-        </div>
     </div>
   );
 }
