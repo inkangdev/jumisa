@@ -1,84 +1,143 @@
 -- ============================================================
--- Jumisa 초기 스키마 v1
--- 출처: KIS 국내주식 현재가 시세(TR FHKST01010100) 응답 필드 기반
--- 데이터 변경 주기로 테이블 분리: 마스터(불변) / 시세(시간별) / 가치지표(일별)
--- 적용: Supabase SQL Editor 또는 JDBC 로 실행 (public 스키마)
+-- Jumisa 스키마 v2
+-- 데이터 소스: KIS 공개 마스터 파일(종목/거래상태/연간재무) + KIS Open API(시세/가치지표)
+-- 변경 주기/보관 정책으로 테이블 분리:
+--   stock              마스터(불변+거래상태)        ← 마스터 파일, 1일 1회
+--   stock_financials   재무(연간/분기)              ← 마스터 파일 + 재무비율 API
+--   stock_price_snapshot 인트라데이 시세(1시간)      ← inquire-price, 7일 보관
+--   stock_daily        일봉(종가+가치지표)          ← inquire-price 마감 1회, 장기 보관
+--   undervalue_score   저평가 점수/랭킹(스키마만)    ← 가중치 확정 후 적재
+-- 적용: Supabase(public 스키마). 신규 생성 시 본 파일 전체 실행.
 -- ============================================================
 
 -- ─────────────────────────────────────────────
--- 1) 종목 마스터: 거의 변하지 않는 기초정보
+-- 1) 종목 마스터: 기초정보 + 거래상태 (마스터 파일에서 적재)
 -- ─────────────────────────────────────────────
 create table if not exists stock (
-    stock_code        varchar(6)  primary key,                -- 종목코드 (예: 005930)
-    name              varchar(100),                           -- 종목명 (KIS 시세엔 없음 → 별도 보강)
-    market            varchar(20),                            -- 시장구분 (KOSPI/KOSDAQ/KOSPI200), rprs_mrkt_kor_name
-    sector            varchar(50),                            -- 업종명 (bstp_kor_isnm, 예: 전기·전자)
-    listed_shares     bigint,                                 -- 상장주식수 (lstn_stcn, 단위: 주)
-    face_value        integer,                                -- 액면가 (stck_fcam, 단위: 원)
-    capital_eokwon    bigint,                                 -- 자본금 (cpfn, 단위: 억원)
+    stock_code        varchar(6)  primary key,                -- 단축 종목코드 (예: 005930)
+    name              varchar(100),                           -- 한글 종목명 (마스터 파일)
+    std_code          varchar(12),                            -- 표준코드(ISIN)
+    market            varchar(20),                            -- 시장구분 (KOSPI/KOSDAQ)
+    sector            varchar(50),                            -- 업종명 (지수업종 분류)
+    security_type     varchar(20),                            -- 증권구분 (보통주/우선주/ETF/ETN/리츠/SPAC) — 보통주 필터
+    cap_size_class    varchar(10),                            -- 시총규모 (대형/중형/소형)
+    listed_shares     bigint,                                 -- 상장주식수 (주)
+    face_value        integer,                                -- 액면가 (원)
+    capital_eokwon    bigint,                                 -- 자본금 (억원)
+    settle_month      smallint,                               -- 결산월
+    -- 거래상태 (폴링 대상 판단 + 스크리너 필터)
+    is_tradable       boolean     not null default true,      -- 거래가능 여부 (정지/정리/관리 아니면 true)
+    is_admin_issue    boolean     not null default false,     -- 관리종목
+    is_trading_halt   boolean     not null default false,     -- 거래정지
+    is_liquidation    boolean     not null default false,     -- 정리매매
+    market_warning    varchar(10),                            -- 투자경고/주의/위험 (없으면 null)
+    is_short_overheat boolean     not null default false,     -- 공매도과열
+    status_at         timestamptz,                            -- 거래상태 갱신 시각
     created_at        timestamptz not null default now(),
     updated_at        timestamptz not null default now()
 );
 
-comment on table  stock                is '종목 기초정보 마스터 (거의 불변)';
-comment on column stock.stock_code     is '종목코드 6자리';
-comment on column stock.name           is '종목명 (KIS 현재가 응답에 없어 별도 소스로 보강)';
-comment on column stock.market         is '시장구분 (KOSPI/KOSDAQ/KOSPI200)';
-comment on column stock.sector         is '업종명';
-comment on column stock.listed_shares  is '상장주식수(주)';
-comment on column stock.capital_eokwon is '자본금(억원)';
+comment on table  stock                 is '종목 기초정보 + 거래상태 마스터 (KIS 마스터 파일, 1일 1회 갱신)';
+comment on column stock.security_type   is '증권구분 (보통주 필터링 기준)';
+comment on column stock.is_tradable     is '거래가능 여부 (시세 폴링 대상 판단)';
+comment on column stock.market_warning  is '시장경고 단계 (투자경고/주의/위험)';
 
 -- ─────────────────────────────────────────────
--- 2) 시세 스냅샷: 1시간 단위 적재 (시계열)
+-- 2) 재무: 연간(마스터) + 분기(재무비율 API)
+-- ─────────────────────────────────────────────
+create table if not exists stock_financials (
+    stock_code     varchar(6)  not null references stock(stock_code),
+    base_ym        varchar(6)  not null,                      -- 기준년월 (예: 202412)
+    revenue_eok    bigint,                                    -- 매출액 (억원)
+    op_profit_eok  bigint,                                    -- 영업이익 (억원)
+    ord_profit_eok bigint,                                    -- 경상이익 (억원)
+    net_income_eok bigint,                                    -- 당기순이익 (억원)
+    roe            numeric(8,2),                              -- ROE (%)        — 마스터(연간)
+    eps            numeric(14,2),                             -- EPS (원)       — 재무비율 API(분기)
+    bps            numeric(14,2),                             -- BPS (원)       — 재무비율 API(분기)
+    debt_ratio     numeric(8,2),                              -- 부채비율 (%)   — 재무비율 API(분기)
+    source         varchar(10) not null,                      -- 'master' | 'kis_api'
+    updated_at     timestamptz not null default now(),
+    primary key (stock_code, base_ym)
+);
+
+comment on table stock_financials is '재무지표 (연간: 마스터 파일 / 분기: KIS 재무비율 API)';
+
+-- ─────────────────────────────────────────────
+-- 3) 인트라데이 시세: 1시간 단위 (모의투자 기준가) — 7일 보관
 -- ─────────────────────────────────────────────
 create table if not exists stock_price_snapshot (
     id                  bigint generated always as identity primary key,
     stock_code          varchar(6)  not null references stock(stock_code),
     snapshot_at         timestamptz not null,                 -- 적재 시각 (수집 시점)
-    current_price       integer     not null,                 -- 현재가 (stck_prpr, 원)
-    prev_day_diff       integer,                              -- 전일대비 (prdy_vrss, 원)
-    prev_day_sign       varchar(1),                           -- 전일대비부호 (prdy_vrss_sign: 1상한 2상승 3보합 4하락 5하한)
-    change_rate         numeric(7,2),                         -- 등락률 (prdy_ctrt, %)
-    open_price          integer,                              -- 시가 (stck_oprc)
-    high_price          integer,                              -- 고가 (stck_hgpr)
-    low_price           integer,                              -- 저가 (stck_lwpr)
-    upper_limit         integer,                              -- 상한가 (stck_mxpr)
-    lower_limit         integer,                              -- 하한가 (stck_llam)
-    accum_volume        bigint,                               -- 누적거래량 (acml_vol, 주)
-    accum_trade_amount  bigint,                               -- 누적거래대금 (acml_tr_pbmn, 원)
-    market_cap_eokwon   bigint,                               -- 시가총액 (hts_avls, 억원)
+    current_price       integer     not null,                 -- 현재가 (원)
+    prev_day_diff       integer,                              -- 전일대비 (원)
+    prev_day_sign       varchar(1),                           -- 전일대비부호 (1상한 2상승 3보합 4하락 5하한)
+    change_rate         numeric(7,2),                         -- 등락률 (%)
+    open_price          integer,                              -- 시가
+    high_price          integer,                              -- 고가
+    low_price           integer,                              -- 저가
+    accum_volume        bigint,                               -- 누적거래량 (주)
+    accum_trade_amount  bigint,                               -- 누적거래대금 (원)
+    market_cap_eokwon   bigint,                               -- 시가총액 (억원)
     created_at          timestamptz not null default now(),
     unique (stock_code, snapshot_at)
 );
 
-comment on table stock_price_snapshot is '1시간 단위 시세 스냅샷 (시계열, 랭킹 히스토리 근거)';
+comment on table stock_price_snapshot is '1시간 단위 인트라데이 시세 (모의투자 기준가). 7일 경과분은 정리 배치로 삭제.';
 
--- 최신 시세 조회 / 시계열 조회용 인덱스
 create index if not exists idx_snapshot_stock_time
     on stock_price_snapshot (stock_code, snapshot_at desc);
 create index if not exists idx_snapshot_time
     on stock_price_snapshot (snapshot_at);
 
+-- 정리 배치(매일 새벽)에서 실행:
+--   delete from stock_price_snapshot where snapshot_at < now() - interval '7 days';
+
 -- ─────────────────────────────────────────────
--- 3) 가치지표: 일별 갱신 (저평가 점수 산출 근거)
+-- 4) 일봉: 종가 OHLC + 가치지표 (마감 1회 적재) — 장기 보관
+--    저평가 스크리너 / 랭킹 히스토리 / 과거 차트 근거
 -- ─────────────────────────────────────────────
-create table if not exists stock_valuation (
-    id                 bigint generated always as identity primary key,
-    stock_code         varchar(6)  not null references stock(stock_code),
-    base_date          date        not null,                  -- 기준일
-    per                numeric(12,2),                         -- PER (per) — 주가수익비율
-    pbr                numeric(12,2),                         -- PBR (pbr) — 주가순자산비율
-    eps                numeric(14,2),                         -- EPS (eps, 원) — 주당순이익
-    bps                numeric(14,2),                         -- BPS (bps, 원) — 주당순자산
-    vol_turnover_rate  numeric(8,2),                          -- 거래량회전율 (vol_tnrt, %)
-    w52_high           integer,                               -- 52주 최고가 (w52_hgpr)
-    w52_low            integer,                               -- 52주 최저가 (w52_lwpr)
-    created_at         timestamptz not null default now(),
-    unique (stock_code, base_date)
+create table if not exists stock_daily (
+    stock_code        varchar(6)  not null references stock(stock_code),
+    base_date         date        not null,                   -- 기준일
+    -- 시세
+    close_price       integer,                                -- 종가
+    open_price        integer,                                -- 시가
+    high_price        integer,                                -- 고가
+    low_price         integer,                                -- 저가
+    volume            bigint,                                 -- 거래량 (주)
+    trade_amount      bigint,                                 -- 거래대금 (원)
+    market_cap_eokwon bigint,                                 -- 시가총액 (억원)
+    -- 가치지표
+    per               numeric(12,2),                          -- PER
+    pbr               numeric(12,2),                          -- PBR
+    eps               numeric(14,2),                          -- EPS (원)
+    bps               numeric(14,2),                          -- BPS (원)
+    w52_high          integer,                                -- 52주 최고가
+    w52_low           integer,                                -- 52주 최저가
+    created_at        timestamptz not null default now(),
+    primary key (stock_code, base_date)
 );
 
-comment on table stock_valuation is '일별 가치지표 (PER/PBR/EPS/BPS 등) — 저평가 점수 산출 근거';
+comment on table stock_daily is '일봉: 종가 OHLC + 가치지표 (마감 후 1회 적재, 장기 보관) — 스크리너/랭킹 근거';
 
--- 특정일 전체 종목 랭킹 산출용 인덱스
-create index if not exists idx_valuation_date
-    on stock_valuation (base_date);
+create index if not exists idx_daily_date on stock_daily (base_date);
+
+-- ─────────────────────────────────────────────
+-- 5) 저평가 점수/랭킹 히스토리 (스키마만 — 적재는 가중치 확정 후)
+-- ─────────────────────────────────────────────
+create table if not exists undervalue_score (
+    base_date    date        not null,                        -- 산출 기준일
+    stock_code   varchar(6)  not null references stock(stock_code),
+    total_score  numeric(6,2),                                -- 종합 저평가 점수
+    rank         integer,                                     -- 당일 순위
+    per_score    numeric(6,2),                                -- 세부: PER 기여 점수
+    pbr_score    numeric(6,2),                                -- 세부: PBR 기여 점수
+    created_at   timestamptz not null default now(),
+    primary key (base_date, stock_code)
+);
+
+comment on table undervalue_score is '저평가 점수/랭킹 히스토리 (순위 추이). 적재 로직은 PER/PBR 가중치 확정 후 구현.';
+
+create index if not exists idx_uvscore_date_rank on undervalue_score (base_date, rank);
