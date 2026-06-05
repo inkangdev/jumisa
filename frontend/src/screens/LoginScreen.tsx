@@ -31,8 +31,7 @@ export default function LoginScreen({ onLogin }: Props) {
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", padding: "0 24px" }}>
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+    <div style={{ display: "flex", flexDirection: "column" }}>
         {/* 로고 */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
           <div style={{ fontSize: 38, fontWeight: 900, color: T.accent, letterSpacing: -1 }}>JUMISA</div>
@@ -147,7 +146,6 @@ export default function LoginScreen({ onLogin }: Props) {
         >
           🎁 가입 즉시 <b>1,000,000P</b> + 대결방 자동 참가!
         </div>
-      </div>
     </div>
   );
 }
