@@ -30,9 +30,9 @@ spring:
       # 새 환경에서 최초 1회만 'always' 로 켜서 테이블 생성 후 다시 never.
       initialize-schema: never
     job:
-      # 부팅 시 정의된 잡 자동 실행 (스프링 배치 기본). 비우면 모든 잡(master/price/finance) 실행.
-      # 특정 잡만 돌리려면 실행 시 spring.batch.job.name=financeJob 지정.
-      enabled: true
+      # 부팅 시 자동 실행 안 함(스프링 배치가 잡 이름 강요하는 모드 회피).
+      # 잡 실행은 스케줄러(BatchScheduler)가 시간 맞춰 자동으로 한다.
+      enabled: false
 
 # === 한국투자증권(KIS) Open API ===
 kis:
