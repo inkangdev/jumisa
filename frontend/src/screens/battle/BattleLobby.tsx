@@ -17,7 +17,7 @@ const fmtP = (n: number) => {
   return n.toLocaleString();
 };
 
-export default function BattleLobby({ user, onNavigate }: Props) {
+export default function BattleLobby({ onNavigate }: Props) {
   const [rooms, setRooms] = useState<{ waiting: RoomSummary[]; active: RoomSummary[]; myWaiting: RoomSummary[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState("");

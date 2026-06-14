@@ -13,7 +13,7 @@ const PERIODS = ["3", "7", "14", "30"];
 const START_POINTS: [string, number][] = [["50만", 500_000], ["100만", 1_000_000], ["300만", 3_000_000]];
 const MARKETS: [string, string][] = [["kr", "🇰🇷 국내만"], ["both", "국내+미국"], ["us", "🇺🇸 미국만"]];
 
-export default function CreateRoom({ user, onBack, onCreated }: Props) {
+export default function CreateRoom({ onBack, onCreated }: Props) {
   const [name, setName] = useState("");
   const [period, setPeriod] = useState("7");
   const [startPoints, setStartPoints] = useState(1_000_000);
