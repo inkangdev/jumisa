@@ -154,3 +154,60 @@ create table if not exists member (
 );
 
 comment on table member is '회원 (Spring Security 세션 인증). password 는 BCrypt 해시.';
+
+-- ─────────────────────────────────────────────
+-- 7) 모의투자 대결 (Phase 1: 국내 종목만)
+-- ─────────────────────────────────────────────
+create table if not exists battle_room (
+    id             bigint generated always as identity primary key,
+    name           varchar(100) not null,
+    host_member_id bigint not null references member(id),
+    invite_code    varchar(12) not null unique,
+    period_days    smallint not null,
+    start_points   bigint not null,
+    max_players    smallint not null,
+    market         varchar(4) not null check (market in ('both','kr','us')),
+    status         varchar(8) not null default 'waiting' check (status in ('waiting','active','finished')),
+    starts_at      timestamptz,
+    ends_at        timestamptz,
+    created_at     timestamptz not null default now()
+);
+
+comment on table battle_room is '모의투자 대결방 (Phase 1: 국내 종목만, 1시간 적재가 기준)';
+
+create table if not exists battle_participant (
+    id        bigint generated always as identity primary key,
+    room_id   bigint not null references battle_room(id),
+    member_id bigint not null references member(id),
+    points    bigint not null default 0,
+    joined_at timestamptz not null default now(),
+    unique (room_id, member_id)
+);
+
+comment on table battle_participant is '대결 참가자 (현금 잔고. 시작 전 0, 시작 시 start_points 지급)';
+
+create table if not exists battle_holding (
+    id             bigint generated always as identity primary key,
+    participant_id bigint not null references battle_participant(id),
+    stock_code     varchar(6) not null references stock(stock_code),
+    qty            integer not null default 0,
+    avg_price      integer not null default 0
+);
+
+comment on table battle_holding is '대결 참가자 보유 종목 (평단가)';
+
+create table if not exists battle_trade (
+    id             bigint generated always as identity primary key,
+    participant_id bigint not null references battle_participant(id),
+    stock_code     varchar(6) not null,
+    type           varchar(4) not null check (type in ('buy','sell')),
+    qty            integer not null,
+    price          integer not null,
+    traded_at      timestamptz not null default now()
+);
+
+comment on table battle_trade is '대결 거래 내역 (시장가, 1시간 적재가 기준)';
+
+create index if not exists idx_battle_participant_room on battle_participant (room_id);
+create index if not exists idx_battle_holding_participant on battle_holding (participant_id);
+create index if not exists idx_battle_trade_participant on battle_trade (participant_id);
