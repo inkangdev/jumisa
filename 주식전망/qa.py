@@ -2,37 +2,16 @@
 
 프론트의 'AI 질문' 팝업이 보내는 자유 텍스트를 처리한다.
 주식/투자와 무관한 질문은 거절하고, 관련 질문이면 언급된 종목을 DB에서 찾아
-claude.generate_advice 로 전망·매매의견을 만든다.
+Gemini 로 전망·매매의견을 만든다.
 """
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 
-import anthropic
-
-from .claude import generate_advice
 from .config import Settings
 from .db import fetch_stock_context, resolve_stock
-
-_CLASSIFY_SYSTEM = """\
-너는 입력 메시지가 '특정 주식/종목에 대한 투자 판단(매수·매도·전망·주가)' 질문인지 분류한다.
-- 주식·투자와 무관한 일반 질문이면 stock_related=false.
-- 관련된 질문이면 stock_related=true 이고, 언급된 한국 상장 종목의 회사명(또는 6자리 종목코드)을 company 에 넣는다.
-- 종목이 특정되지 않으면 company 는 빈 문자열("").
-회사명은 정식 종목명에 가깝게 정규화한다(예: "삼성" → "삼성전자" 가 명확하면 그렇게, 모호하면 입력 그대로).
-"""
-
-_CLASSIFY_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "stock_related": {"type": "boolean"},
-        "company": {"type": "string"},
-    },
-    "required": ["stock_related", "company"],
-    "additionalProperties": False,
-}
+from .gemini import classify_stock_question, generate_advice
 
 
 @dataclass
@@ -47,26 +26,12 @@ class QAResult:
     answer: str | None = None        # 전체 분석 본문
 
 
-def _classify(settings: Settings, question: str) -> tuple[bool, str]:
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    resp = client.messages.create(
-        model=settings.model,
-        max_tokens=300,
-        system=_CLASSIFY_SYSTEM,
-        output_config={"format": {"type": "json_schema", "schema": _CLASSIFY_SCHEMA}},
-        messages=[{"role": "user", "content": question}],
-    )
-    text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "{}")
-    data = json.loads(text)
-    return bool(data.get("stock_related")), str(data.get("company") or "").strip()
-
-
 def answer_question(settings: Settings, question: str) -> QAResult:
     q = question.strip()
     if not q:
         return QAResult(stock_related=False, message="질문을 입력해 주세요.")
 
-    stock_related, company = _classify(settings, q)
+    stock_related, company = classify_stock_question(settings, q)
     if not stock_related:
         return QAResult(
             stock_related=False,

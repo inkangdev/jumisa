@@ -65,6 +65,18 @@
 - 검증: `python -m py_compile 주식전망/*.py` 그린. 프론트는 node_modules 미설치라 로컬 `npm install` 후 타입체크 필요.
 - 미해결: AI 엔드포인트 인가(현재 프론트에서 로그인 시에만 노출, 서버단 세션검증은 미적용 — 추후 Spring 세션/토큰 연동 검토). 배포 시 파이썬 서비스 호스팅(Render 별도 서비스 or 로컬) 결정 필요.
 
+## AI 제공자 변경: Claude → Gemini 무료 (사용자 요청, 비용)
+
+Claude API는 Max 구독과 별개로 유료(사용량 과금)라, **무료인 Google Gemini(무료 등급)** 로 교체.
+
+- `claude.py` → **`gemini.py`** (google-genai SDK). 뉴스 수집은 **Google 검색 grounding**(`types.Tool(google_search=types.GoogleSearch())`).
+- 분류(주식관련 판별+종목추출)도 Gemini 로 (`classify_stock_question`, JSON 응답).
+- `config.py`: `ANTHROPIC_API_KEY` → `GEMINI_API_KEY`, 기본모델 `gemini-2.5-flash`(무료), effort 제거.
+- `requirements`: anthropic 제거, **google-genai** 추가.
+- `render.yaml`/`.env.example`/`배포.md`: env 키 `ANTHROPIC_API_KEY` → `GEMINI_API_KEY`.
+- 비용: Gemini 무료 등급(예: 2.5 Flash 10 RPM·일 한도). 개인 테스트 범위 무료. 단 무료등급은 데이터가 모델개선에 쓰일 수 있음.
+- 키 발급: https://aistudio.google.com/apikey
+
 ## 후속/개선 메모
 
 - 출력 구조화: 현재는 텍스트 + 첫 줄 파싱. 필요 시 JSON(structured outputs)로. 단, web_search 는 citations 동반이라 structured outputs 와의 동시 사용은 호환성 확인 필요.
