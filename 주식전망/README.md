@@ -54,6 +54,20 @@ python -m 주식전망 000660 --model claude-opus-4-8
 
 출력 첫 줄은 파싱용 `전망: <상승|하락|중립> | 판단: <매수|매도|관망> | 확신도: <상|중|하>`, 이후 사람이 읽는 분석.
 
+## 웹 서버 (프론트 연동)
+
+프론트(React)의 우상단 **AI 질문 팝업**이 호출하는 HTTP 엔드포인트(FastAPI).
+
+```bash
+# 레포 루트에서 (기본 :8000, AI_PORT 로 변경 가능)
+python -m 주식전망.web
+```
+
+- `POST /ai/ask  { "question": "삼성전자 지금 사도 돼?" }`
+  → `{ ok, stock_related, message, stock_code, stock_name, outlook, verdict, confidence, answer }`
+- 자유 질문을 받아 **①주식 관련 질문인지 판별**(아니면 거절) → **②종목명/코드 추출 후 DB 매칭** → **③전망+매매의견** 생성.
+- 프론트는 `frontend/vite.config.ts` 의 프록시(`/ai` → `:8000`)로 호출 → 개발 시 CORS 불필요.
+
 ## 구조
 
 ```
@@ -66,7 +80,9 @@ python -m 주식전망 000660 --model claude-opus-4-8
   db.py          psycopg 로 종목 1건의 마스터/시세/일봉/재무 조회
   prompt.py      StockContext → 시스템/유저 프롬프트 (전망+매매의견, 웹검색 지시 포함)
   claude.py      Claude 호출 (web_search, pause_turn 재개) → Advice(전망/판단/확신도)
-  cli.py         인자 파싱 / 실행
+  qa.py          자유질문 → 주식관련 판별 + 종목추출/매칭 → answer_question()
+  web.py         FastAPI 서버 (POST /ai/ask) — 프론트 팝업이 호출
+  cli.py         인자 파싱 / 실행 (CLI)
 ```
 
 > 내부 `.py` 모듈 파일명(config.py 등)은 파이썬 관례상 영문 유지. 폴더(패키지)명만 한글.

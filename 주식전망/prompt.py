@@ -37,10 +37,14 @@ def _fmt(value: object, suffix: str = "") -> str:
     return f"{value}{suffix}"
 
 
-def build_user_prompt(ctx: StockContext) -> str:
+def build_user_prompt(ctx: StockContext, question: str | None = None) -> str:
     m = ctx.master
     lines: list[str] = []
     lines.append(f"# 분석 대상 종목: {m.name or '(이름없음)'} ({m.stock_code})")
+    if question:
+        lines.append("")
+        lines.append(f"## 사용자 질문\n{question.strip()}")
+        lines.append("(아래 분석은 이 질문에 답하는 형태로 작성한다.)")
     lines.append("")
     lines.append("## DB 에 적재된 사실 (기준 데이터)")
     lines.append(f"- 시장/업종: {_fmt(m.market)} / {_fmt(m.sector)}")

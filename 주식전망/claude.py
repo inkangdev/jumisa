@@ -40,10 +40,10 @@ def _extract_text(content) -> str:
     return "".join(block.text for block in content if getattr(block, "type", None) == "text")
 
 
-def generate_advice(settings: Settings, ctx: StockContext) -> Advice:
+def generate_advice(settings: Settings, ctx: StockContext, question: str | None = None) -> Advice:
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
-    user_prompt = build_user_prompt(ctx)
+    user_prompt = build_user_prompt(ctx, question=question)
     messages = [{"role": "user", "content": user_prompt}]
 
     response = None

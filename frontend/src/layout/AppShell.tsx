@@ -7,9 +7,11 @@ import type { AuthUser } from "../api/auth";
 import BottomNav from "./BottomNav";
 import { NAV, type AppTab } from "./nav";
 import BattleTab from "../screens/battle/BattleTab";
+import AiAskModal from "../screens/ai/AiAskModal";
 
 export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [tab, setTab] = useState<AppTab>("screener");
+  const [aiOpen, setAiOpen] = useState(false);
   const current = NAV.find((n) => n.id === tab)!;
 
   return (
@@ -25,6 +27,7 @@ export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout:
     >
       <div
         style={{
+          position: "relative",
           width: "100%",
           maxWidth: 420,
           height: "100dvh",
@@ -33,6 +36,30 @@ export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout:
           background: T.bg,
         }}
       >
+        {/* 우상단 AI 질문 아이콘 — 클릭 시 레이어팝업 */}
+        <button
+          onClick={() => setAiOpen(true)}
+          title="AI 주식전망에게 질문"
+          aria-label="AI 주식전망에게 질문"
+          style={{
+            position: "absolute",
+            top: 10,
+            right: 12,
+            zIndex: 20,
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            border: "none",
+            background: `linear-gradient(135deg,${T.accent},${T.purple})`,
+            color: "#fff",
+            fontSize: 18,
+            cursor: "pointer",
+            boxShadow: "0 4px 14px rgba(79,142,247,0.4)",
+          }}
+        >
+          ✨
+        </button>
+
         {/* 콘텐츠 영역 (탭 화면 자리) */}
         <div style={{ flex: 1, overflow: "auto" }}>
           {tab === "battle" ? (
@@ -44,6 +71,8 @@ export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout:
 
         <BottomNav active={tab} onSelect={setTab} avatar={user.avatar} />
       </div>
+
+      <AiAskModal open={aiOpen} onClose={() => setAiOpen(false)} />
     </div>
   );
 }

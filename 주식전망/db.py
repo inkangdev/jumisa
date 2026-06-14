@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import re
+
 import psycopg
 from psycopg.rows import dict_row
 
@@ -20,6 +22,50 @@ from .models import (
 
 class StockNotFound(LookupError):
     """해당 종목코드가 stock 테이블에 없음."""
+
+
+_CODE_RE = re.compile(r"^\d{6}$")
+
+
+def resolve_stock(settings: "Settings", query: str) -> tuple[str, str] | None:
+    """자유 입력(종목명 또는 6자리 코드) → (종목코드, 종목명). 못 찾으면 None.
+
+    - 6자리 숫자면 코드로 간주.
+    - 아니면 이름 정확 일치(보통주 우선) → 부분 일치(거래가능, 짧은 이름 우선) 순.
+    """
+    q = query.strip()
+    if not q:
+        return None
+    with _connect(settings) as conn, conn.cursor(row_factory=dict_row) as cur:
+        if _CODE_RE.match(q):
+            cur.execute("select stock_code, name from stock where stock_code = %s", (q,))
+            row = cur.fetchone()
+            return (row["stock_code"], row["name"]) if row else None
+
+        cur.execute(
+            """
+            select stock_code, name from stock
+            where name = %s
+            order by case when security_type = '보통주' then 0 else 1 end
+            limit 1
+            """,
+            (q,),
+        )
+        row = cur.fetchone()
+        if row:
+            return (row["stock_code"], row["name"])
+
+        cur.execute(
+            """
+            select stock_code, name from stock
+            where name ilike %s and is_tradable
+            order by case when security_type = '보통주' then 0 else 1 end, length(name)
+            limit 1
+            """,
+            (f"%{q}%",),
+        )
+        row = cur.fetchone()
+        return (row["stock_code"], row["name"]) if row else None
 
 
 def _connect(settings: Settings) -> psycopg.Connection:

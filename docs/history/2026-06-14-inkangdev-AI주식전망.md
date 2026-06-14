@@ -48,6 +48,23 @@
 - 의존성 없이 가능한 순수 로직(JDBC→libpq 변환, 전망/판단/확신도 정규식 파싱) 단위 확인 OK.
 - DB/API 실호출 e2e 는 자격증명·키 필요 → 레포 루트에서 `pip install -r 주식전망/requirements.txt` 후 `python -m 주식전망 005930` 로 확인.
 
+## 프론트 접목 (이어서, 사용자 요청)
+
+로그인 후 **메인 레이아웃 우상단에 AI 질문 아이콘(✨)** → 클릭 시 **레이어팝업**으로 자유 질문 → 파이썬 AI(주식전망)가 처리한 결과를 화면에 표시. **주식 관련 질문일 때만** 처리.
+
+- **Python(주식전망)**
+  - `db.resolve_stock()` — 종목명/6자리코드 → (코드,이름) DB 매칭(정확→부분일치, 보통주 우선).
+  - `prompt.build_user_prompt(ctx, question=...)` / `claude.generate_advice(..., question=...)` — 사용자 원질문을 분석에 반영.
+  - `qa.answer_question()` — ①Claude 구조화출력으로 *주식관련 판별+종목추출* → ②`resolve_stock` → ③`generate_advice`. 무관/종목없음은 메시지로 거절.
+  - `web.py` — FastAPI `POST /ai/ask` (+ `/ai/health`). 실행 `python -m 주식전망.web` (:8000). requirements 에 fastapi/uvicorn 추가.
+- **frontend (React)**
+  - `vite.config.ts` 프록시 `/ai` → `:8000` 추가.
+  - `src/api/ai.ts` — `ask(question)` 클라이언트.
+  - `src/screens/ai/AiAskModal.tsx` — 레이어팝업(질문 textarea + 전망/판단/확신도 뱃지 + 본문). 거절/종목없음 메시지 처리.
+  - `src/layout/AppShell.tsx` — 우상단 ✨ 버튼 + 모달 상태.
+- 검증: `python -m py_compile 주식전망/*.py` 그린. 프론트는 node_modules 미설치라 로컬 `npm install` 후 타입체크 필요.
+- 미해결: AI 엔드포인트 인가(현재 프론트에서 로그인 시에만 노출, 서버단 세션검증은 미적용 — 추후 Spring 세션/토큰 연동 검토). 배포 시 파이썬 서비스 호스팅(Render 별도 서비스 or 로컬) 결정 필요.
+
 ## 후속/개선 메모
 
 - 출력 구조화: 현재는 텍스트 + 첫 줄 파싱. 필요 시 JSON(structured outputs)로. 단, web_search 는 citations 동반이라 structured outputs 와의 동시 사용은 호환성 확인 필요.
