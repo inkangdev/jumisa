@@ -5,9 +5,11 @@ import { NAV, type AppTab } from "./nav";
 export default function BottomNav({
   active,
   onSelect,
+  avatar,
 }: {
   active: AppTab;
   onSelect: (tab: AppTab) => void;
+  avatar: string | null;
 }) {
   return (
     <div
@@ -23,6 +25,8 @@ export default function BottomNav({
     >
       {NAV.map((n) => {
         const on = active === n.id;
+        // 내 정보 탭은 로그인 사용자의 프로필 동물(아바타)을 아이콘으로 사용.
+        const icon = n.id === "profile" ? avatar ?? n.icon : n.icon;
         return (
           <button
             key={n.id}
@@ -51,7 +55,7 @@ export default function BottomNav({
                 fontSize: n.id === "battle" ? 18 : 15,
               }}
             >
-              {n.icon}
+              {icon}
             </div>
             <span style={{ fontSize: 9, fontWeight: on ? 700 : 400, color: on ? T.accent : T.mute }}>
               {n.label}
