@@ -1,6 +1,5 @@
-package com.jumisa.kis
+package com.jumisa.infra.kis
 
-import com.jumisa.config.KisProperties
 import org.springframework.stereotype.Component
 
 /**

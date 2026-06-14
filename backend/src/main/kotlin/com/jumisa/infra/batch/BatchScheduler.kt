@@ -1,4 +1,4 @@
-package com.jumisa.batch
+package com.jumisa.infra.batch
 
 import com.jumisa.stock.PriceRepository
 import org.slf4j.LoggerFactory

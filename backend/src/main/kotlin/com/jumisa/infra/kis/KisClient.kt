@@ -1,7 +1,6 @@
-package com.jumisa.kis
+package com.jumisa.infra.kis
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.jumisa.config.KisProperties
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
