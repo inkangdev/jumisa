@@ -52,7 +52,8 @@ jumisa:
     scheduler-enabled: ${BATCH_SCHEDULER_ENABLED:false}
 
 server:
-  port: ${SERVER_PORT:8080}
+  # Render 등 PaaS 는 PORT 를 주입한다. 로컬은 SERVER_PORT, 둘 다 없으면 8080.
+  port: ${PORT:${SERVER_PORT:8080}}
 
 # 헬스체크 등 운영 엔드포인트
 management:

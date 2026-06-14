@@ -1,0 +1,53 @@
+# Render Blueprint
+# Render 대시보드 → New → Blueprint → 이 저장소 연결 시 아래 서비스가 생성됨.
+# Secret(SUPABASE_*) 은 대시보드에서 직접 입력한다(sync: false).
+# 참고: https://render.com/docs/blueprint-spec
+
+services:
+  # ── 백엔드: Spring Boot (Docker) ─────────────────────────────
+  - type: web
+    name: jumisa-backend
+    runtime: docker
+    plan: free
+    region: singapore           # 한국에서 가장 가까운 무료 리전
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    healthCheckPath: /actuator/health
+    envVars:
+      # === Supabase Postgres (대시보드에서 직접 입력) ===
+      - key: SUPABASE_DB_URL
+        sync: false             # 예: jdbc:postgresql://...supabase.co:5432/postgres?sslmode=require
+      - key: SUPABASE_DB_USER
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      # === 선택: 배치/외부 API 키 (필요 시 주석 해제) ===
+      # - key: BATCH_SCHEDULER_ENABLED
+      #   value: "false"
+      # - key: KIS_ENV
+      #   value: vts
+      # - key: KIS_APP_KEY
+      #   sync: false
+      # - key: KIS_APP_SECRET
+      #   sync: false
+      # - key: KIS_ACCOUNT_NO
+      #   sync: false
+
+  # ── 프론트엔드: React + Vite (Static Site) ───────────────────
+  - type: web
+    name: jumisa-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    routes:
+      # /api/* 요청을 백엔드로 프록시 → 브라우저 입장에선 same-origin
+      # (세션 쿠키 인증이 정상 동작하도록. dev 의 vite proxy 를 프로덕션에서 재현)
+      # ⚠️ 백엔드 서비스가 처음 배포된 뒤 실제 URL 로 맞춰야 함.
+      - type: rewrite
+        source: /api/*
+        destination: https://jumisa-backend.onrender.com/api/*
+      # SPA 라우팅: 나머지 경로는 index.html 로
+      - type: rewrite
+        source: /*
+        destination: /index.html
