@@ -30,3 +30,9 @@ input:focus {
   outline: none;
   border-color: #4f8ef7;
 }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

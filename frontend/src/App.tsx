@@ -78,7 +78,9 @@ export default function App() {
       }}
     >
       <div style={{ width: "100%", maxWidth: 400 }}>
-        {booting ? null : user ? (
+        {booting ? (
+          <BootingView />
+        ) : user ? (
           <AuthedView user={user} onLogout={handleLogout} />
         ) : screen === "login" ? (
           <LoginScreen onLogin={handleLogin} onSwitchToSignup={goSignup} error={error} loading={loading} />
@@ -86,6 +88,27 @@ export default function App() {
           <SignupScreen onSignup={handleSignup} onSwitchToLogin={goLogin} error={error} loading={loading} />
         )}
       </div>
+    </div>
+  );
+}
+
+// 부팅 중(세션 확인) 화면. Render 무료플랜 콜드스타트로 백엔드가 깨어나는
+// 동안 빈 화면(까만 배경)만 보이던 문제를 로고 + 스피너로 대체한다.
+function BootingView() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 20 }}>
+      <div style={{ fontSize: 40 }}>🐂</div>
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: "50%",
+          border: `3px solid ${T.border}`,
+          borderTopColor: T.accent,
+          animation: "spin 0.8s linear infinite",
+        }}
+      />
+      <div style={{ fontSize: 13, color: T.sub }}>불러오는 중…</div>
     </div>
   );
 }
