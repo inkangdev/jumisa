@@ -1,6 +1,6 @@
 package com.jumisa.stock
 
-import com.jumisa.master.StockMaster
+import com.jumisa.stock.master.StockMaster
 import org.springframework.jdbc.core.BatchPreparedStatementSetter
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Repository

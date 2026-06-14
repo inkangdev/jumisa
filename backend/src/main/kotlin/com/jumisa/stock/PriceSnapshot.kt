@@ -1,6 +1,6 @@
 package com.jumisa.stock
 
-import com.jumisa.kis.CurrentPrice
+import com.jumisa.infra.kis.CurrentPrice
 import java.math.BigDecimal
 import java.time.Instant
 

@@ -1,6 +1,6 @@
-package com.jumisa.batch
+package com.jumisa.stock.batch
 
-import com.jumisa.kis.KisClient
+import com.jumisa.infra.kis.KisClient
 import com.jumisa.stock.PriceRepository
 import com.jumisa.stock.PriceSnapshot
 import com.jumisa.stock.StockRepository

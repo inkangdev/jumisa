@@ -1,4 +1,4 @@
-package com.jumisa.master
+package com.jumisa.stock.master
 
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component

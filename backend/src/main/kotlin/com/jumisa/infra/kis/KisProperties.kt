@@ -1,4 +1,4 @@
-package com.jumisa.config
+package com.jumisa.infra.kis
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

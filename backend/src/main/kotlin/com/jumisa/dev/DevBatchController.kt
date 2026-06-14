@@ -1,4 +1,4 @@
-package com.jumisa.kis
+package com.jumisa.dev
 
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.JobParametersBuilder

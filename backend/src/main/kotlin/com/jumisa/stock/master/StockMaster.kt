@@ -1,4 +1,4 @@
-package com.jumisa.master
+package com.jumisa.stock.master
 
 /** KIS 마스터 파일에서 파싱한 종목 기초정보 (보통주). */
 data class StockMaster(

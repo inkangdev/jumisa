@@ -1,6 +1,6 @@
-package com.jumisa.batch
+package com.jumisa.stock.batch
 
-import com.jumisa.master.KisMasterClient
+import com.jumisa.stock.master.KisMasterClient
 import com.jumisa.stock.StockRepository
 import org.slf4j.LoggerFactory
 import org.springframework.batch.core.Job
