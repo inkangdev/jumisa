@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
+import AppShell from "./layout/AppShell";
 import { T } from "./theme";
 import * as auth from "./api/auth";
 import type { AuthUser } from "./api/auth";
@@ -64,6 +65,11 @@ export default function App() {
     setScreen("login");
   };
 
+  // 로그인 완료 → 메인 셸(틀). 로그인/회원가입과 달리 셸이 자체 풀하이트 프레임을 가짐.
+  if (!booting && user) {
+    return <AppShell user={user} onLogout={handleLogout} />;
+  }
+
   return (
     <div
       style={{
@@ -80,8 +86,6 @@ export default function App() {
       <div style={{ width: "100%", maxWidth: 400 }}>
         {booting ? (
           <BootingView />
-        ) : user ? (
-          <AuthedView user={user} onLogout={handleLogout} />
         ) : screen === "login" ? (
           <LoginScreen onLogin={handleLogin} onSwitchToSignup={goSignup} error={error} loading={loading} />
         ) : (
@@ -109,35 +113,6 @@ function BootingView() {
         }}
       />
       <div style={{ fontSize: 13, color: T.sub }}>불러오는 중…</div>
-    </div>
-  );
-}
-
-// 로그인 후 임시 화면 (이후 메인 화면으로 교체 예정)
-function AuthedView({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-      <div style={{ fontSize: 64, marginBottom: 8 }}>{user.avatar ?? "🐂"}</div>
-      <div style={{ fontSize: 22, fontWeight: 900, color: T.text }}>
-        {user.username}님, 환영합니다 👋
-      </div>
-      <div style={{ fontSize: 13, color: T.sub, marginTop: 6, marginBottom: 28 }}>로그인되었습니다.</div>
-      <button
-        onClick={onLogout}
-        style={{
-          padding: "12px 28px",
-          borderRadius: 12,
-          border: `1px solid ${T.border}`,
-          background: T.redBg,
-          color: T.red,
-          fontFamily: T.sans,
-          fontWeight: 700,
-          fontSize: 13,
-          cursor: "pointer",
-        }}
-      >
-        로그아웃
-      </button>
     </div>
   );
 }
