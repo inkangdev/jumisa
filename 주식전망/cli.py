@@ -1,8 +1,8 @@
 """커맨드라인 진입점.
 
 사용 (레포 루트에서):
-    python -m ai 005930
-    python -m ai 005930 --effort high
+    python -m 주식전망 005930
+    python -m 주식전망 005930 --effort high
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from .db import StockNotFound, fetch_stock_context
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="ai",
+        prog="주식전망",
         description="DB 종목 데이터 + Claude(웹검색)로 AI 주식전망(상승/하락/중립)과 매매 의견을 생성한다.",
     )
     parser.add_argument("stock_code", help="6자리 종목코드 (예: 005930)")

@@ -1,4 +1,4 @@
-# ai — AI 주식전망 (jumisa)
+# 주식전망 — AI 주식전망 (jumisa)
 
 jumisa 의 AI 컴포넌트(Python). `backend`/`frontend`/`batch` 와 같은 계층의 신규 프로젝트.
 AI에게 질문해서 **주가 전망과 사고/팔지** 답변을 받는다.
@@ -23,13 +23,13 @@ AI에게 질문해서 **주가 전망과 사고/팔지** 답변을 받는다.
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r ai/requirements.txt
+pip install -r 주식전망/requirements.txt
 ```
 
 ## 설정
 
 DB는 백엔드와 같은 것을 쓰므로, 레포 루트 `.env`(백엔드용)에 `ANTHROPIC_API_KEY` 만 추가하면
-ai 가 루트 `.env` 를 자동으로 읽는다. ai 만 따로 돌리려면:
+이 컴포넌트가 루트 `.env` 를 자동으로 읽는다. 따로 돌리려면:
 
 ```bash
 cp .env.example .env   # 값 채우기 (SUPABASE_DB_* + ANTHROPIC_API_KEY)
@@ -47,9 +47,9 @@ cp .env.example .env   # 값 채우기 (SUPABASE_DB_* + ANTHROPIC_API_KEY)
 
 ```bash
 # 레포 루트에서
-python -m ai 005930              # 삼성전자
-python -m ai 005930 --effort high
-python -m ai 000660 --model claude-opus-4-8
+python -m 주식전망 005930              # 삼성전자
+python -m 주식전망 005930 --effort high
+python -m 주식전망 000660 --model claude-opus-4-8
 ```
 
 출력 첫 줄은 파싱용 `전망: <상승|하락|중립> | 판단: <매수|매도|관망> | 확신도: <상|중|하>`, 이후 사람이 읽는 분석.
@@ -57,10 +57,10 @@ python -m ai 000660 --model claude-opus-4-8
 ## 구조
 
 ```
-ai/                ← 폴더 = 파이썬 패키지
+주식전망/            ← 폴더 = 파이썬 패키지
   requirements.txt
   .env.example
-  __main__.py    python -m ai 진입점
+  __main__.py    python -m 주식전망 진입점
   config.py      환경변수 로딩 (JDBC→libpq 변환, .env 탐색)
   models.py      DB 행 → dataclass (StockContext)
   db.py          psycopg 로 종목 1건의 마스터/시세/일봉/재무 조회
@@ -68,3 +68,5 @@ ai/                ← 폴더 = 파이썬 패키지
   claude.py      Claude 호출 (web_search, pause_turn 재개) → Advice(전망/판단/확신도)
   cli.py         인자 파싱 / 실행
 ```
+
+> 내부 `.py` 모듈 파일명(config.py 등)은 파이썬 관례상 영문 유지. 폴더(패키지)명만 한글.
