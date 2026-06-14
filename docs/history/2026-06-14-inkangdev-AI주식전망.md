@@ -2,11 +2,12 @@
 
 브랜치: `claude/claude-md-reader-jj6zox`
 
-"AI에게 질문해서 주식을 사고/팔지 답변을 받는 어플리케이션" 을 **레포 내 신규 Python 프로젝트**(`ai-advisor/`)로 개발한다. DB는 백엔드와 **동일한 Supabase Postgres** 를 그대로 사용한다.
+"AI에게 질문해서 주식을 사고/팔지 답변을 받는 어플리케이션" 을 **레포 내 신규 Python 프로젝트**(`ai/`)로 개발한다. DB는 백엔드와 **동일한 Supabase Postgres** 를 그대로 사용한다.
 
 ## 결정 사항 (사용자 합의)
 
-- 형태: 주미사 레포 안에 **별도 Python 프로젝트**(`ai-advisor/`) 신규 개발. 기존 Kotlin 백엔드/React 프론트와 분리.
+- 형태: 주미사 레포 안에 **별도 Python 프로젝트** 신규 개발. 기존 Kotlin 백엔드/React 프론트와 분리.
+  - 폴더명은 `backend`/`frontend`/`batch` 와 같은 **'역할' 한 단어**로: `ai/` (내부 파이썬 패키지 `advisor`). (※ 초기 `ai-advisor` 에서 변경 — 다른 폴더들과 성격/카테고리 일치)
 - DB: 동일 Supabase Postgres (`SUPABASE_DB_*` 재사용, 읽기 전용).
 - 입력: **이미 DB에 적재된 종목 데이터** + **뉴스는 AI가 web_search 로 직접 수집**.
 - 모델: **Claude `claude-opus-4-8`** (Anthropic API). adaptive thinking + effort=medium(기본).
@@ -16,17 +17,17 @@
 ## 구현
 
 ```
-ai-advisor/
+ai/
   requirements.txt        anthropic / psycopg[binary] / python-dotenv
   .env.example            SUPABASE_DB_* + ANTHROPIC_API_KEY
   README.md
-  ai_advisor/
+  advisor/
     config.py    환경변수 로딩. JDBC URL(jdbc:) → libpq 변환, 루트 .env 자동 탐색
     models.py    StockMaster/PriceSnapshot/DailyValuation/Financials → StockContext
     db.py        psycopg 로 종목 1건: stock + 최신 stock_price_snapshot + 최신 stock_daily + 최근 stock_financials(4행)
     prompt.py    StockContext → 시스템/유저 프롬프트. "web_search 로 최신 뉴스 직접 수집" 지시 포함
     advisor.py   Claude 호출. tools=[web_search_20260209], stop_reason=pause_turn 재개 루프. 결과 파싱
-    cli.py       python -m ai_advisor <종목코드> [--effort] [--model]
+    cli.py       python -m advisor <종목코드> [--effort] [--model]
     __main__.py
 ```
 
@@ -42,9 +43,9 @@ ai-advisor/
 
 ## 검증
 
-- `python -m py_compile ai_advisor/*.py` 그린.
-- 의존성 없이 가능한 순수 로직(JDBC→libpq 변환, 판단/확신도 정규식 파싱) 단위 확인 OK.
-- DB/API 실호출 e2e 는 자격증명·키 필요 → 로컬에서 `pip install -r requirements.txt` 후 `python -m ai_advisor 005930` 로 확인.
+- `python -m py_compile advisor/*.py` 그린.
+- 의존성 없이 가능한 순수 로직(JDBC→libpq 변환, 전망/판단/확신도 정규식 파싱) 단위 확인 OK.
+- DB/API 실호출 e2e 는 자격증명·키 필요 → 로컬 `ai/` 에서 `pip install -r requirements.txt` 후 `python -m advisor 005930` 로 확인.
 
 ## 후속/개선 메모
 

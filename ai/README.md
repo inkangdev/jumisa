@@ -1,6 +1,7 @@
-# ai-advisor — AI 주식전망 (jumisa)
+# ai — AI 주식전망 (jumisa)
 
-AI에게 질문해서 **주가 전망과 사고/팔지** 답변을 받는 신규 Python 프로젝트.
+jumisa 의 AI 컴포넌트(Python). `backend`/`frontend`/`batch` 와 같은 계층의 신규 프로젝트.
+AI에게 질문해서 **주가 전망과 사고/팔지** 답변을 받는다.
 
 종목코드를 주면:
 
@@ -19,7 +20,7 @@ AI에게 질문해서 **주가 전망과 사고/팔지** 답변을 받는 신규
 ## 설치
 
 ```bash
-cd ai-advisor
+cd ai
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -27,7 +28,7 @@ pip install -r requirements.txt
 ## 설정
 
 DB는 백엔드와 같은 것을 쓰므로, 레포 루트 `.env`(백엔드용)에 `ANTHROPIC_API_KEY` 만 추가하면
-ai-advisor 가 루트 `.env` 를 자동으로 읽는다. ai-advisor 만 따로 돌리려면:
+ai 가 루트 `.env` 를 자동으로 읽는다. ai 만 따로 돌리려면:
 
 ```bash
 cp .env.example .env   # 값 채우기 (SUPABASE_DB_* + ANTHROPIC_API_KEY)
@@ -44,9 +45,10 @@ cp .env.example .env   # 값 채우기 (SUPABASE_DB_* + ANTHROPIC_API_KEY)
 ## 사용
 
 ```bash
-python -m ai_advisor 005930              # 삼성전자
-python -m ai_advisor 005930 --effort high
-python -m ai_advisor 000660 --model claude-opus-4-8
+# ai/ 폴더에서
+python -m advisor 005930              # 삼성전자
+python -m advisor 005930 --effort high
+python -m advisor 000660 --model claude-opus-4-8
 ```
 
 출력 첫 줄은 파싱용 `전망: <상승|하락|중립> | 판단: <매수|매도|관망> | 확신도: <상|중|하>`, 이후 사람이 읽는 분석.
@@ -54,11 +56,14 @@ python -m ai_advisor 000660 --model claude-opus-4-8
 ## 구조
 
 ```
-ai_advisor/
-  config.py    환경변수 로딩 (JDBC→libpq 변환, .env 탐색)
-  models.py    DB 행 → dataclass (StockContext)
-  db.py        psycopg 로 종목 1건의 마스터/시세/일봉/재무 조회
-  prompt.py    StockContext → 시스템/유저 프롬프트 (전망+매매의견, 웹검색 지시 포함)
-  advisor.py   Claude 호출 (web_search, pause_turn 재개) → Advice(전망/판단/확신도)
-  cli.py       python -m ai_advisor <종목코드>
+ai/
+  requirements.txt
+  .env.example
+  advisor/                 ← 파이썬 패키지
+    config.py    환경변수 로딩 (JDBC→libpq 변환, .env 탐색)
+    models.py    DB 행 → dataclass (StockContext)
+    db.py        psycopg 로 종목 1건의 마스터/시세/일봉/재무 조회
+    prompt.py    StockContext → 시스템/유저 프롬프트 (전망+매매의견, 웹검색 지시 포함)
+    advisor.py   Claude 호출 (web_search, pause_turn 재개) → Advice(전망/판단/확신도)
+    cli.py       python -m advisor <종목코드>
 ```
