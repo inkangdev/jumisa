@@ -16,6 +16,28 @@ class StockRepository(private val jdbc: JdbcTemplate) {
             String::class.java,
         )
 
+    /** 종목코드→법인등록번호 매핑 upsert (금융위 종목기본정보). 기존 stock 만 갱신. */
+    fun upsertCrno(pairs: List<Pair<String, String>>) {
+        if (pairs.isEmpty()) return
+        jdbc.batchUpdate(
+            "update stock set crno = ?, updated_at = now() where stock_code = ?",
+            object : BatchPreparedStatementSetter {
+                override fun setValues(ps: PreparedStatement, i: Int) {
+                    ps.setString(1, pairs[i].second) // crno
+                    ps.setString(2, pairs[i].first)  // stock_code
+                }
+                override fun getBatchSize(): Int = pairs.size
+            },
+        )
+    }
+
+    /** crno 가 매핑된 거래가능 종목 (code, crno). 재무 적재 대상. */
+    fun findCommonStockCrnos(): List<Pair<String, String>> =
+        jdbc.query(
+            "select stock_code, crno from stock where crno is not null and is_tradable order by stock_code",
+            { rs, _ -> rs.getString("stock_code") to rs.getString("crno") },
+        )
+
     /** 마스터 파일 파싱 결과를 stock 에 upsert. */
     fun upsertMasters(list: List<StockMaster>) {
         if (list.isEmpty()) return

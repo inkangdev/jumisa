@@ -21,6 +21,8 @@ class BatchCliRunner(
     private val jobLauncher: JobLauncher,
     private val stockMasterJob: Job,
     private val priceSnapshotJob: Job,
+    private val corpMappingJob: Job,
+    private val financeJob: Job,
     @Value("\${jumisa.batch.scheduler-enabled:false}") private val schedulerEnabled: Boolean,
 ) : CommandLineRunner {
 
@@ -44,13 +46,23 @@ class BatchCliRunner(
                 val exec = jobLauncher.run(priceSnapshotJob, params)
                 log.info("priceSnapshotJob 완료: {}", exec.status)
             }
+            "corpmap" -> {
+                val params = JobParametersBuilder().addLong("runAt", System.currentTimeMillis()).toJobParameters()
+                val exec = jobLauncher.run(corpMappingJob, params)
+                log.info("corpMappingJob 완료: {}", exec.status)
+            }
+            "finance" -> {
+                val params = JobParametersBuilder().addLong("runAt", System.currentTimeMillis()).toJobParameters()
+                val exec = jobLauncher.run(financeJob, params)
+                log.info("financeJob 완료: {}", exec.status)
+            }
             null ->
                 if (schedulerEnabled) {
                     log.info("✅ 스케줄러 상주 모드 — 종료하지 않고 대기합니다. 자동 실행: 평일 마스터 08:00 / 시세 09~15시 매시 / 정리 04:30. (즉시 1회는 --args='master'|'price')")
                 } else {
-                    log.info("실행할 잡 없음 — 앱을 종료합니다. (즉시 1회: --args='master'|'price', 상주: BATCH_SCHEDULER_ENABLED=true)")
+                    log.info("실행할 잡 없음 — 앱을 종료합니다. (즉시 1회: --args='master'|'price'|'corpmap'|'finance', 상주: BATCH_SCHEDULER_ENABLED=true)")
                 }
-            else -> log.warn("알 수 없는 인자 '{}'. 사용법: --args='master' | --args='price'", args.first())
+            else -> log.warn("알 수 없는 인자 '{}'. 사용법: --args='master'|'price'|'corpmap'|'finance'", args.first())
         }
     }
 }
