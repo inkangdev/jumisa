@@ -22,6 +22,7 @@ class BatchScheduler(
     private val jobLauncher: JobLauncher,
     private val stockMasterJob: Job,
     private val priceSnapshotJob: Job,
+    private val financeJob: Job,
     private val priceRepository: PriceRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -49,5 +50,12 @@ class BatchScheduler(
     fun cleanupSnapshots() {
         val deleted = priceRepository.deleteOlderThan(7)
         log.info("인트라데이 시세 정리: {}행 삭제", deleted)
+    }
+
+    /** 재무지표 갱신: 주 1회(일요일 06:00). 매핑→재무 한 번에. (분기 변동이라 주 1회로 충분) */
+    @Scheduled(cron = "0 0 6 * * SUN", zone = "Asia/Seoul")
+    fun runFinance() {
+        val params = JobParametersBuilder().addLong("runAt", System.currentTimeMillis()).toJobParameters()
+        jobLauncher.run(financeJob, params)
     }
 }
