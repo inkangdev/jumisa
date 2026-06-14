@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: jumisa-batch
+
+  # 비웹 앱 (서버 안 띄움). CLI 인자로 잡 실행 후 종료.
+  main:
+    web-application-type: none
+
+  # === Supabase(Postgres) 연결 === (실제 값은 backend/.env)
+  datasource:
+    url: ${SUPABASE_DB_URL}
+    username: ${SUPABASE_DB_USER}
+    password: ${SUPABASE_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+
+  # === Spring Batch ===
+  batch:
+    jdbc:
+      # 최초 실행 시 BATCH_* 메타데이터 테이블 자동 생성
+      initialize-schema: always
+    job:
+      # 부팅 시 자동 실행 막음 (CLI 러너/스케줄러로 트리거)
+      enabled: false
+
+# === 한국투자증권(KIS) Open API ===
+kis:
+  env: ${KIS_ENV:vts}
+  app-key: ${KIS_APP_KEY:}
+  app-secret: ${KIS_APP_SECRET:}
+  account-no: ${KIS_ACCOUNT_NO:}
+  account-product-code: ${KIS_ACCOUNT_PRODUCT_CODE:01}
+  rate-per-second: ${KIS_RATE_PER_SECOND:8}
+  token-cache-path: ${KIS_TOKEN_CACHE_PATH:}
+
+# === Jumisa 배치 ===
+jumisa:
+  batch:
+    # 스케줄러 기본 off. true 면 @Scheduled 로 장중 시세/마스터 자동 실행(상주).
+    scheduler-enabled: ${BATCH_SCHEDULER_ENABLED:false}
