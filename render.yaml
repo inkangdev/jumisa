@@ -57,14 +57,13 @@ services:
         sync: false
       - key: SUPABASE_DB_PASSWORD
         sync: false
-      # === Claude API (대시보드에서 입력) ===
-      - key: ANTHROPIC_API_KEY
+      # === Google Gemini (무료 등급, 대시보드에서 입력) ===
+      # 키 발급: https://aistudio.google.com/apikey
+      - key: GEMINI_API_KEY
         sync: false
-      # === 선택: 모델/사고깊이 ===
+      # === 선택: 모델 ===
       # - key: AI_MODEL
-      #   value: claude-opus-4-8
-      # - key: AI_EFFORT
-      #   value: medium
+      #   value: gemini-2.5-flash
 
   # ── 프론트엔드: React + Vite (Static Site) ───────────────────
   # 사용자가 접속하는 사이트. 주소: https://jumisa.onrender.com

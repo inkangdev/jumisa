@@ -2,7 +2,7 @@
 
 사용 (레포 루트에서):
     python -m 주식전망 005930
-    python -m 주식전망 005930 --effort high
+    python -m 주식전망 005930 --model gemini-2.5-flash
 """
 
 from __future__ import annotations
@@ -10,23 +10,18 @@ from __future__ import annotations
 import argparse
 import sys
 
-from .claude import generate_advice
 from .config import ConfigError, load_settings
 from .db import StockNotFound, fetch_stock_context
+from .gemini import generate_advice
 
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="주식전망",
-        description="DB 종목 데이터 + Claude(웹검색)로 AI 주식전망(상승/하락/중립)과 매매 의견을 생성한다.",
+        description="DB 종목 데이터 + Gemini(Google 검색)로 AI 주식전망(상승/하락/중립)과 매매 의견을 생성한다.",
     )
     parser.add_argument("stock_code", help="6자리 종목코드 (예: 005930)")
-    parser.add_argument(
-        "--effort",
-        choices=["low", "medium", "high", "max"],
-        help="사고 깊이/토큰 비용 (기본: 설정값/medium)",
-    )
-    parser.add_argument("--model", help="사용할 Claude 모델 ID (기본: claude-opus-4-8)")
+    parser.add_argument("--model", help="사용할 Gemini 모델 ID (기본: gemini-2.5-flash)")
     return parser
 
 
@@ -39,8 +34,6 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[설정오류] {exc}", file=sys.stderr)
         return 2
 
-    if args.effort:
-        settings = settings.__class__(**{**settings.__dict__, "effort": args.effort})
     if args.model:
         settings = settings.__class__(**{**settings.__dict__, "model": args.model})
 
