@@ -11,12 +11,6 @@ type Props = {
   onNavigate: (view: BattleView, roomId?: number) => void;
 };
 
-const fmtP = (n: number) => {
-  if (n >= 1e8) return (n / 1e8).toFixed(1) + "억";
-  if (n >= 1e4) return Math.round(n / 1e4) + "만";
-  return n.toLocaleString();
-};
-
 export default function BattleLobby({ onNavigate }: Props) {
   const [rooms, setRooms] = useState<{ waiting: RoomSummary[]; active: RoomSummary[]; myWaiting: RoomSummary[] } | null>(null);
   const [loading, setLoading] = useState(true);

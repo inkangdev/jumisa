@@ -27,3 +27,15 @@ tsconfig `noUnusedLocals: true` → `'user' is declared but its value is never r
 
 - 머지 후 Render 빌드 + 라이브 번들 해시 변경으로 확인(배포 성공 = tsc 통과).
 - 번들이 바뀌면 대결 탭의 로비/방생성 화면이 실제 노출.
+
+## 추가 (2차) — `fmtP` 미사용
+
+user prop 수정만으론 배포가 안 풀려, **node 설치 후 로컬 `npm run build`** 로 실제 tsc 에러를 확정:
+
+```
+src/screens/battle/BattleLobby.tsx(14,7): error TS6133: 'fmtP' is declared but its value is never read.
+```
+
+- `BattleLobby` 모듈 레벨 `fmtP`(14행)가 미사용 — `RoomCard` 안에 동일 `fmtP`가 따로 있어 본문용은 안 쓰임. 제거.
+- 이후 `npm run build` → tsc 0 에러, vite 빌드 성공 확인.
+- **교훈**: node 부재로 그동안 프론트 tsc를 로컬 검증 못 해 손으로 추적했음. node 설치됨 → 앞으로 프론트 머지 전 `npm run build` 필수.
