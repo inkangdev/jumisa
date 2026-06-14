@@ -40,5 +40,6 @@ kis:
 # === Jumisa 배치 ===
 jumisa:
   batch:
-    # 스케줄러 기본 off. true 면 @Scheduled 로 장중 시세/마스터 자동 실행(상주).
-    scheduler-enabled: ${BATCH_SCHEDULER_ENABLED:false}
+    # 스케줄러 기본 on. 그냥 실행하면 @Scheduled 로 종료 안 하고 상주하며
+    # 장중 시세/마스터를 자동 실행한다. (일회성으로 끄려면 BATCH_SCHEDULER_ENABLED=false)
+    scheduler-enabled: ${BATCH_SCHEDULER_ENABLED:true}
