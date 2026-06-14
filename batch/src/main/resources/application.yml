@@ -13,16 +13,20 @@ spring:
     password: ${SUPABASE_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      # 배치는 단일 스레드라 연결 소량이면 충분. Supabase 무료 세션풀러(최대 15)를
-      # 웹앱과 나눠 써야 하므로 작게 고정(DB_POOL_SIZE 안 씀).
+      # 배치는 단일 스레드 + 대부분 유휴(상주 스케줄러). Supabase 무료 세션풀러(최대 15)를
+      # 웹앱과 나눠 써야 하므로, 놀 때는 연결을 0으로 반납하고 잡 돌 때만 잠깐 잡는다.
       maximum-pool-size: 2
-      minimum-idle: 1
+      minimum-idle: 0
+      idle-timeout: 10000      # 10초 유휴 시 연결 반납
+      keepalive-time: 0
 
   # === Spring Batch ===
   batch:
     jdbc:
-      # 최초 실행 시 BATCH_* 메타데이터 테이블 자동 생성
-      initialize-schema: always
+      # BATCH_* 메타테이블은 이미 생성됨 → 부팅 시 스키마 초기화 안 함.
+      # (이걸 always 로 두면 부팅 때 DB 연결을 잡아, 풀 한도 초과 시 부팅 자체가 실패함)
+      # 새 환경에서 최초 1회만 'always' 로 켜서 테이블 생성 후 다시 never.
+      initialize-schema: never
     job:
       # 부팅 시 자동 실행 막음 (CLI 러너/스케줄러로 트리거)
       enabled: false
