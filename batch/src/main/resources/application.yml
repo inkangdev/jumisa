@@ -13,7 +13,10 @@ spring:
     password: ${SUPABASE_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:5}
+      # 배치는 단일 스레드라 연결 소량이면 충분. Supabase 무료 세션풀러(최대 15)를
+      # 웹앱과 나눠 써야 하므로 작게 고정(DB_POOL_SIZE 안 씀).
+      maximum-pool-size: 2
+      minimum-idle: 1
 
   # === Spring Batch ===
   batch:

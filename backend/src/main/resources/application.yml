@@ -9,7 +9,8 @@ spring:
     password: ${SUPABASE_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:10}
+      # Supabase 무료 세션풀러는 클라이언트 최대 15. 배치/로컬개발과 나눠 쓰려고 작게.
+      maximum-pool-size: ${DB_POOL_SIZE:5}
       # Supabase Supavisor(트랜잭션 모드, 6543) 사용 시:
       # data-source-properties:
       #   prepareThreshold: 0
