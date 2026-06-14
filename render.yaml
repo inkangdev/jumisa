@@ -33,6 +33,39 @@ services:
       # - key: KIS_ACCOUNT_NO
       #   sync: false
 
+  # ── AI 서비스: 주식전망 (Python / FastAPI) ────────────────────
+  # 프론트 'AI 질문' 팝업이 호출. DB(Supabase) + Claude 로 전망/매매의견 생성.
+  # 주소: https://jumisa-ai.onrender.com (사용자 직접 접속 X, 프론트가 /ai 로 프록시)
+  - type: web
+    name: jumisa-ai
+    runtime: python
+    plan: free
+    region: singapore
+    # 패키지명이 한글('주식전망')이라 레포 루트에서 패키지로 실행한다.
+    buildCommand: pip install -r 주식전망/requirements.txt
+    startCommand: python -m 주식전망.web
+    healthCheckPath: /ai/health
+    envVars:
+      - key: PYTHONUTF8            # 한글 패키지명 안전하게 import
+        value: "1"
+      - key: LANG
+        value: C.UTF-8
+      # === Supabase Postgres (백엔드와 동일 값, 대시보드에서 입력) ===
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: SUPABASE_DB_USER
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      # === Claude API (대시보드에서 입력) ===
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # === 선택: 모델/사고깊이 ===
+      # - key: AI_MODEL
+      #   value: claude-opus-4-8
+      # - key: AI_EFFORT
+      #   value: medium
+
   # ── 프론트엔드: React + Vite (Static Site) ───────────────────
   # 사용자가 접속하는 사이트. 주소: https://jumisa.onrender.com
   - type: web
@@ -48,6 +81,10 @@ services:
       - type: rewrite
         source: /api/*
         destination: https://jumisa-backend.onrender.com/api/*
+      # /ai/* 요청을 파이썬 AI 서비스로 프록시 (dev 의 vite proxy 재현)
+      - type: rewrite
+        source: /ai/*
+        destination: https://jumisa-ai.onrender.com/ai/*
       # SPA 라우팅: 나머지 경로는 index.html 로
       - type: rewrite
         source: /*
