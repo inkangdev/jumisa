@@ -57,7 +57,8 @@ def ask(body: AskBody) -> dict:
 def main() -> None:
     import uvicorn
 
-    port = int(os.environ.get("AI_PORT", "8000"))
+    # Render 는 $PORT 주입. 로컬은 AI_PORT, 둘 다 없으면 8000.
+    port = int(os.environ.get("PORT") or os.environ.get("AI_PORT") or "8000")
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
