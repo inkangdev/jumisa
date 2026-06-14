@@ -21,7 +21,7 @@ except ImportError:  # python-dotenv 미설치 시에도 환경변수만으로 �
         return False
 
 
-_PROJECT_DIR = Path(__file__).resolve().parent.parent          # ai/
+_PROJECT_DIR = Path(__file__).resolve().parent                 # ai/
 _REPO_ROOT = _PROJECT_DIR.parent                                # jumisa/
 
 # 기본 모델: 최신·최상위 Claude (스킬 권장값).
@@ -86,6 +86,6 @@ def load_settings() -> Settings:
         db_user=os.environ["SUPABASE_DB_USER"],
         db_password=os.environ["SUPABASE_DB_PASSWORD"],
         anthropic_api_key=os.environ["ANTHROPIC_API_KEY"],
-        model=os.environ.get("AI_ADVISOR_MODEL", DEFAULT_MODEL),
-        effort=os.environ.get("AI_ADVISOR_EFFORT", DEFAULT_EFFORT),
+        model=os.environ.get("AI_MODEL", DEFAULT_MODEL),
+        effort=os.environ.get("AI_EFFORT", DEFAULT_EFFORT),
     )
