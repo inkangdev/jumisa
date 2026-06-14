@@ -21,8 +21,6 @@
   - 예: `2026-06-05-inkangdev-주가적재배치.md`
   - `<git아이디>`는 `git config user.name` 값을 사용한다.
 
-## 운영 / 배포 문서 (`docs/ops/`)
+## 참고 문서
 
-`docs/history/`가 시점별 작업 로그라면, `docs/ops/`는 **현행 상태를 유지하는 레퍼런스**다(바뀌면 갱신).
-
-- `docs/ops/배포.md` — Render 배포 환경·프로세스(서비스 구성, 자동 배포, 환경변수, 콜드스타트, 트러블슈팅).
+- `docs/ops/배포.md` — Render 배포/운영 레퍼런스.
