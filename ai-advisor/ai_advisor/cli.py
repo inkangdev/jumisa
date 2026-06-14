@@ -18,7 +18,7 @@ from .db import StockNotFound, fetch_stock_context
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ai_advisor",
-        description="DB 종목 데이터 + Claude(웹검색)로 매수/매도/관망 AI 의견을 생성한다.",
+        description="DB 종목 데이터 + Claude(웹검색)로 AI 주식전망(상승/하락/중립)과 매매 의견을 생성한다.",
     )
     parser.add_argument("stock_code", help="6자리 종목코드 (예: 005930)")
     parser.add_argument(
@@ -53,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[DB오류] {exc}", file=sys.stderr)
         return 1
 
-    print(f"▶ {ctx.master.name or ''} ({args.stock_code}) AI 매매의견 생성 중… (모델 {settings.model})\n")
+    print(f"▶ {ctx.master.name or ''} ({args.stock_code}) AI 주식전망 생성 중… (모델 {settings.model})\n")
 
     try:
         advice = generate_advice(settings, ctx)
@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[API오류] {exc}", file=sys.stderr)
         return 1
 
-    header = f"판단: {advice.verdict or '미파싱'}"
+    header = f"전망: {advice.outlook or '미파싱'} | 판단: {advice.verdict or '미파싱'}"
     if advice.confidence:
         header += f" | 확신도: {advice.confidence}"
     print("=" * 60)

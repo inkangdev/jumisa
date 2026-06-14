@@ -1,4 +1,4 @@
-"""Claude 호출 — DB 사실 + web_search(뉴스 자체 수집) → 매수/매도/관망 의견.
+"""Claude 호출 — DB 사실 + web_search(뉴스 자체 수집) → 주가 전망 + 매매 의견.
 
 web_search 는 Anthropic 서버사이드 툴이라 클라이언트가 실행할 게 없다. 다만 서버 툴 루프가
 10회 한도에 닿으면 stop_reason='pause_turn' 으로 끊기므로, 그 경우 대화를 재전송해 이어간다.
@@ -21,6 +21,7 @@ _WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search"}
 _MAX_CONTINUATIONS = 6          # pause_turn 재개 상한 (무한루프 방지)
 _MAX_TOKENS = 8000
 
+_OUTLOOK_RE = re.compile(r"전망:\s*(상승|하락|중립)")
 _VERDICT_RE = re.compile(r"판단:\s*(매수|매도|관망)")
 _CONFIDENCE_RE = re.compile(r"확신도:\s*(상|중|하)")
 
@@ -29,6 +30,7 @@ _CONFIDENCE_RE = re.compile(r"확신도:\s*(상|중|하)")
 class Advice:
     stock_code: str
     stock_name: str | None
+    outlook: str | None          # 상승 | 하락 | 중립 | None(파싱 실패)
     verdict: str | None          # 매수 | 매도 | 관망 | None(파싱 실패)
     confidence: str | None       # 상 | 중 | 하 | None
     text: str                    # 모델이 생성한 전체 분석 본문
@@ -66,12 +68,14 @@ def generate_advice(settings: Settings, ctx: StockContext) -> Advice:
     assert response is not None
     text = _extract_text(response.content).strip()
 
+    outlook_m = _OUTLOOK_RE.search(text)
     verdict_m = _VERDICT_RE.search(text)
     conf_m = _CONFIDENCE_RE.search(text)
 
     return Advice(
         stock_code=ctx.master.stock_code,
         stock_name=ctx.master.name,
+        outlook=outlook_m.group(1) if outlook_m else None,
         verdict=verdict_m.group(1) if verdict_m else None,
         confidence=conf_m.group(1) if conf_m else None,
         text=text,

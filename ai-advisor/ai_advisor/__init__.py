@@ -1,3 +1,3 @@
-"""AI 매매의견 (jumisa) — DB 종목 데이터 + Claude(web_search)로 매수/매도/관망 의견 생성."""
+"""AI 주식전망 (jumisa) — DB 종목 데이터 + Claude(web_search)로 주가 전망 + 매매 의견 생성."""
 
 __version__ = "0.1.0"

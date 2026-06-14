@@ -1,12 +1,12 @@
-# ai-advisor — AI 매매의견 (jumisa)
+# ai-advisor — AI 주식전망 (jumisa)
 
-AI에게 질문해서 **주식을 사고/팔지** 답변을 받는 신규 Python 프로젝트.
+AI에게 질문해서 **주가 전망과 사고/팔지** 답변을 받는 신규 Python 프로젝트.
 
 종목코드를 주면:
 
 1. jumisa 백엔드와 **동일한 Supabase Postgres** 에서 그 종목의 사실(현재가·PER/PBR·재무지표 등)을 읽고,
 2. **Claude(`claude-opus-4-8`) + web_search 서버 툴**로 최신 뉴스·공시·실적을 *AI가 직접 검색*해 종합한 뒤,
-3. **매수 / 매도 / 관망** 결론 + 확신도 + 근거 + 리스크를 한국어로 반환한다.
+3. **주가 전망(상승/하락/중립)** + **매매 의견(매수/매도/관망)** + 확신도 + 근거 + 리스크를 한국어로 반환한다.
 
 > ⚠️ 모의투자 교육용 참고 의견이며 실제 투자 권유가 아님.
 
@@ -49,7 +49,7 @@ python -m ai_advisor 005930 --effort high
 python -m ai_advisor 000660 --model claude-opus-4-8
 ```
 
-출력 첫 줄은 파싱용 `판단: <매수|매도|관망> | 확신도: <상|중|하>`, 이후 사람이 읽는 분석.
+출력 첫 줄은 파싱용 `전망: <상승|하락|중립> | 판단: <매수|매도|관망> | 확신도: <상|중|하>`, 이후 사람이 읽는 분석.
 
 ## 구조
 
@@ -58,7 +58,7 @@ ai_advisor/
   config.py    환경변수 로딩 (JDBC→libpq 변환, .env 탐색)
   models.py    DB 행 → dataclass (StockContext)
   db.py        psycopg 로 종목 1건의 마스터/시세/일봉/재무 조회
-  prompt.py    StockContext → 시스템/유저 프롬프트 (웹검색 지시 포함)
-  advisor.py   Claude 호출 (web_search, pause_turn 재개) → Advice
+  prompt.py    StockContext → 시스템/유저 프롬프트 (전망+매매의견, 웹검색 지시 포함)
+  advisor.py   Claude 호출 (web_search, pause_turn 재개) → Advice(전망/판단/확신도)
   cli.py       python -m ai_advisor <종목코드>
 ```
