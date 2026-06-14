@@ -1,15 +1,24 @@
-// 배치 앱 (로컬 전용, 비웹). KIS 시세/마스터 적재. CLI 인자로 실행.
+// 배치 앱 (로컬 전용, 비웹). 독립 Gradle 프로젝트. KIS 시세/마스터 적재. CLI 인자로 실행.
+//   cd batch && ./gradlew bootRun --args='master'   종목 마스터 적재
+//   cd batch && ./gradlew bootRun --args='price'    시세 스냅샷 적재
 plugins {
-	kotlin("jvm")
-	kotlin("plugin.spring")
-	id("org.springframework.boot")
-	id("io.spring.dependency-management")
+	kotlin("jvm") version "1.9.25"
+	kotlin("plugin.spring") version "1.9.25"
+	id("org.springframework.boot") version "3.5.0"
+	id("io.spring.dependency-management") version "1.1.7"
 }
+
+group = "com.jumisa"
+version = "0.0.1-SNAPSHOT"
 
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
 	}
+}
+
+repositories {
+	mavenCentral()
 }
 
 dependencies {
@@ -37,6 +46,7 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
+// 로컬 실행 시 리포지토리 루트(jumisa/)의 .env 를 읽도록.
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
-	workingDir = rootProject.projectDir
+	workingDir = rootProject.projectDir.parentFile
 }
