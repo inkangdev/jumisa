@@ -34,8 +34,9 @@ services:
       #   sync: false
 
   # ── 프론트엔드: React + Vite (Static Site) ───────────────────
+  # 사용자가 접속하는 사이트. 주소: https://jumisa.onrender.com
   - type: web
-    name: jumisa-frontend
+    name: jumisa
     runtime: static
     rootDir: frontend
     buildCommand: npm ci && npm run build
@@ -43,7 +44,7 @@ services:
     routes:
       # /api/* 요청을 백엔드로 프록시 → 브라우저 입장에선 same-origin
       # (세션 쿠키 인증이 정상 동작하도록. dev 의 vite proxy 를 프로덕션에서 재현)
-      # ⚠️ 백엔드 서비스가 처음 배포된 뒤 실제 URL 로 맞춰야 함.
+      # 백엔드 실제 배포 주소와 일치함(확인 완료).
       - type: rewrite
         source: /api/*
         destination: https://jumisa-backend.onrender.com/api/*
