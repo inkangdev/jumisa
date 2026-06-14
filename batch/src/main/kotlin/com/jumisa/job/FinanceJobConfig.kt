@@ -16,7 +16,8 @@ import org.springframework.transaction.PlatformTransactionManager
 import java.time.LocalDate
 
 /**
- * financeJob: crno 매핑된 보통주 순회 → 금융위 요약재무제표(최근 2개 연도) → stock_financials.
+ * financeJob: ① 종목↔법인번호 매핑(corpMappingStep) → ② 요약재무제표 적재(financeStep) 한 번에.
+ * 재무는 crno 매핑이 선행돼야 하므로 한 잡 안에서 순서대로 실행.
  * 연결(110) 우선, 없으면 별도(120). per-종목 실패는 skip + 카운트.
  */
 @Configuration
@@ -27,8 +28,8 @@ class FinanceJobConfig(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Bean
-    fun financeJob(financeStep: Step): Job =
-        JobBuilder("financeJob", jobRepository).start(financeStep).build()
+    fun financeJob(corpMappingStep: Step, financeStep: Step): Job =
+        JobBuilder("financeJob", jobRepository).start(corpMappingStep).next(financeStep).build()
 
     @Bean
     fun financeStep(fsc: FscClient, stockRepo: StockRepository, finRepo: FinancialsRepository): Step =

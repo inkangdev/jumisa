@@ -16,7 +16,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 /**
- * corpMappingJob: 금융위 종목기본정보 → stock.crno (종목코드↔법인등록번호) 매핑. 보통주만.
+ * corpMappingStep: 금융위 종목기본정보 → stock.crno (종목코드↔법인등록번호) 매핑. 보통주만.
+ * 독립 잡이 아니라 financeJob 의 선행 step 으로 쓰인다(재무가 매핑에 의존).
  */
 @Configuration
 class CorpMappingJobConfig(
@@ -24,10 +25,6 @@ class CorpMappingJobConfig(
     private val txManager: PlatformTransactionManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
-
-    @Bean
-    fun corpMappingJob(corpMappingStep: Step): Job =
-        JobBuilder("corpMappingJob", jobRepository).start(corpMappingStep).build()
 
     @Bean
     fun corpMappingStep(fsc: FscClient, repo: StockRepository): Step =
