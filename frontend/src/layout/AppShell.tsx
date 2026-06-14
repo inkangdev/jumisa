@@ -37,13 +37,13 @@ export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout:
           <Placeholder tab={tab} label={current.label} icon={current.icon} onLogout={onLogout} user={user} />
         </div>
 
-        <BottomNav active={tab} onSelect={setTab} />
+        <BottomNav active={tab} onSelect={setTab} avatar={user.avatar} />
       </div>
     </div>
   );
 }
 
-// 탭 화면이 들어오기 전까지의 자리표시. 더보기 탭에서만 로그아웃 노출.
+// 탭 화면이 들어오기 전까지의 자리표시. 내 정보 탭에서만 프로필+로그아웃 노출.
 function Placeholder({
   tab,
   label,
@@ -57,6 +57,8 @@ function Placeholder({
   onLogout: () => void;
   user: AuthUser;
 }) {
+  // 내 정보 탭은 큰 아이콘도 사용자 아바타(동물)로 표시.
+  const bigIcon = tab === "profile" ? user.avatar ?? icon : icon;
   return (
     <div
       style={{
@@ -71,16 +73,13 @@ function Placeholder({
         boxSizing: "border-box",
       }}
     >
-      <div style={{ fontSize: 40 }}>{icon}</div>
+      <div style={{ fontSize: 40 }}>{bigIcon}</div>
       <div style={{ fontSize: 18, fontWeight: 900, color: T.text }}>{label}</div>
       <div style={{ fontSize: 13, color: T.sub }}>준비 중입니다</div>
 
-      {tab === "more" && (
+      {tab === "profile" && (
         <div style={{ marginTop: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <div style={{ fontSize: 13, color: T.sub }}>
-            <span style={{ marginRight: 6 }}>{user.avatar ?? "🐂"}</span>
-            {user.username}
-          </div>
+          <div style={{ fontSize: 13, color: T.sub }}>{user.username}</div>
           <button
             onClick={onLogout}
             style={{
