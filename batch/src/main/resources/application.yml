@@ -43,6 +43,10 @@ kis:
   rate-per-second: ${KIS_RATE_PER_SECOND:8}
   token-cache-path: ${KIS_TOKEN_CACHE_PATH:}
 
+# === 금융위원회 공공데이터(data.go.kr) — 재무지표 ===
+fsc:
+  service-key: ${DATA_GO_KR_SERVICE_KEY:}
+
 # === Jumisa 배치 ===
 jumisa:
   batch:

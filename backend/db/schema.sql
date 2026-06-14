@@ -17,6 +17,7 @@ create table if not exists stock (
     stock_code        varchar(6)  primary key,                -- 단축 종목코드 (예: 005930)
     name              varchar(100),                           -- 한글 종목명 (마스터 파일)
     std_code          varchar(12),                            -- 표준코드(ISIN)
+    crno              varchar(13),                            -- 법인등록번호 (금융위 재무 API 조회키)
     market            varchar(20),                            -- 시장구분 (KOSPI/KOSDAQ)
     sector            varchar(50),                            -- 업종명 (지수업종 분류)
     security_type     varchar(20),                            -- 증권구분 (보통주/우선주/ETF/ETN/리츠/SPAC) — 보통주 필터
@@ -52,11 +53,15 @@ create table if not exists stock_financials (
     op_profit_eok  bigint,                                    -- 영업이익 (억원)
     ord_profit_eok bigint,                                    -- 경상이익 (억원)
     net_income_eok bigint,                                    -- 당기순이익 (억원)
+    total_asset_eok  bigint,                                  -- 총자산 (억원)   — 금융위 요약재무 (EV/지표)
+    total_debt_eok   bigint,                                  -- 총부채 (억원)   — 금융위 요약재무 (EV)
+    total_equity_eok bigint,                                  -- 총자본 (억원)   — 금융위 요약재무
+    fncl_dcd       varchar(3),                                -- 재무제표구분 (110 연결 / 120 별도)
     roe            numeric(8,2),                              -- ROE (%)        — 마스터(연간)
     eps            numeric(14,2),                             -- EPS (원)       — 재무비율 API(분기)
     bps            numeric(14,2),                             -- BPS (원)       — 재무비율 API(분기)
-    debt_ratio     numeric(8,2),                              -- 부채비율 (%)   — 재무비율 API(분기)
-    source         varchar(10) not null,                      -- 'master' | 'kis_api'
+    debt_ratio     numeric(8,2),                              -- 부채비율 (%)   — 금융위/재무비율
+    source         varchar(10) not null,                      -- 'master' | 'kis_api' | 'fsc'
     updated_at     timestamptz not null default now(),
     primary key (stock_code, base_ym)
 );
