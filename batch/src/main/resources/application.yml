@@ -6,9 +6,11 @@ spring:
   main:
     web-application-type: none
 
-  # === Supabase(Postgres) 연결 === (실제 값은 backend/.env)
+  # === Supabase(Postgres) 연결 === (실제 값은 루트 .env)
+  # 배치는 트랜잭션 풀러(6543, BATCH_DB_URL)를 우선 사용 → 세션풀러(5432) 15한도 회피.
+  # BATCH_DB_URL 없으면 세션풀러로 폴백.
   datasource:
-    url: ${SUPABASE_DB_URL}
+    url: ${BATCH_DB_URL:${SUPABASE_DB_URL}}
     username: ${SUPABASE_DB_USER}
     password: ${SUPABASE_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
