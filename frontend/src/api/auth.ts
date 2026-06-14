@@ -31,12 +31,19 @@ export const login = (username: string, password: string) =>
 
 export const logout = () => postJson<unknown>("/api/auth/logout", {});
 
-export async function me(): Promise<AuthUser | null> {
+// 부팅 시 세션 확인. Render 무료플랜 콜드스타트(백엔드 깨어나는 ~40초) 동안
+// 요청이 무한정 매달리지 않도록 타임아웃을 둔다. 타임아웃/실패 시 null →
+// 로그인 화면으로 진행(세션이 있었다면 다시 로그인하면 됨).
+export async function me(timeoutMs = 12000): Promise<AuthUser | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch("/api/auth/me", { credentials: "include" });
+    const res = await fetch("/api/auth/me", { credentials: "include", signal: controller.signal });
     if (!res.ok) return null;
     return (await res.json()) as AuthUser;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
