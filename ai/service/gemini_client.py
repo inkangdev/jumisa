@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
 from functools import lru_cache
 
 from google import genai
 from google.genai import types
 
-from .config import Settings
-from .models import StockContext
+from ..config.settings import Settings
+from ..dto.advice import Advice
+from ..dto.stock import StockContext
 from .prompt import SYSTEM_PROMPT, build_user_prompt
 
 _OUTLOOK_RE = re.compile(r"전망:\s*(상승|하락|중립)")
@@ -30,16 +30,6 @@ _CLASSIFY_SYSTEM = """\
 반드시 아래 JSON 한 줄만 출력한다(설명·코드펜스 금지):
 {"stock_related": true/false, "company": "회사명 또는 6자리코드 또는 빈문자열"}
 """
-
-
-@dataclass
-class Advice:
-    stock_code: str
-    stock_name: str | None
-    outlook: str | None          # 상승 | 하락 | 중립 | None(파싱 실패)
-    verdict: str | None          # 매수 | 매도 | 관망 | None(파싱 실패)
-    confidence: str | None       # 상 | 중 | 하 | None
-    text: str                    # 모델이 생성한 전체 분석 본문
 
 
 @lru_cache(maxsize=8)
