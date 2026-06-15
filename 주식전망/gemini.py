@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 
 from google import genai
 from google.genai import types
@@ -41,8 +42,11 @@ class Advice:
     text: str                    # 모델이 생성한 전체 분석 본문
 
 
-def _client(settings: Settings) -> genai.Client:
-    return genai.Client(api_key=settings.gemini_api_key)
+@lru_cache(maxsize=8)
+def _client(api_key: str) -> genai.Client:
+    # google-genai #1489: 클라이언트를 매 요청마다 새로 만들면 공유 httpx 전송이 닫혀
+    # "Cannot send a request, as the client has been closed" 발생 → api_key 별 1개 캐시 재사용.
+    return genai.Client(api_key=api_key)
 
 
 def _strip_json(text: str) -> str:
@@ -57,7 +61,7 @@ def _strip_json(text: str) -> str:
 
 def classify_stock_question(settings: Settings, question: str) -> tuple[bool, str]:
     """질문이 주식 관련인지 + 종목명/코드 추출. (Gemini, 검색 없이)"""
-    resp = _client(settings).models.generate_content(
+    resp = _client(settings.gemini_api_key).models.generate_content(
         model=settings.model,
         contents=question,
         config=types.GenerateContentConfig(
@@ -74,7 +78,7 @@ def classify_stock_question(settings: Settings, question: str) -> tuple[bool, st
 
 def generate_advice(settings: Settings, ctx: StockContext, question: str | None = None) -> Advice:
     user_prompt = build_user_prompt(ctx, question=question)
-    resp = _client(settings).models.generate_content(
+    resp = _client(settings.gemini_api_key).models.generate_content(
         model=settings.model,
         contents=user_prompt,
         config=types.GenerateContentConfig(
