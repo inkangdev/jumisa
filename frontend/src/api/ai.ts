@@ -1,5 +1,5 @@
 // AI 주식전망 API 클라이언트. /ai 는 vite 프록시로 파이썬 FastAPI(:8000)에 연결된다.
-// (백엔드 /api 와 별개. 파이썬 ' 주식전망' 서비스가 DB + Claude 로 처리)
+// (백엔드 /api 와 별개. 파이썬 'ai' 서비스가 DB + Gemini 로 처리)
 
 export type AiAnswer = {
   ok: boolean;

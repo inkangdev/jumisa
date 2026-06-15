@@ -10,8 +10,8 @@ import re
 import psycopg
 from psycopg.rows import dict_row
 
-from .config import Settings
-from .models import (
+from ..config.settings import Settings
+from ..dto.stock import (
     DailyValuation,
     Financials,
     PriceSnapshot,

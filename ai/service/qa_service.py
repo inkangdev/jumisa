@@ -7,23 +7,10 @@ Gemini 로 전망·매매의견을 만든다.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from .config import Settings
-from .db import fetch_stock_context, resolve_stock
-from .gemini import classify_stock_question, generate_advice
-
-
-@dataclass
-class QAResult:
-    stock_related: bool
-    message: str | None = None       # 처리 못 한 이유(거절/종목없음 등)
-    stock_code: str | None = None
-    stock_name: str | None = None
-    outlook: str | None = None       # 상승 | 하락 | 중립
-    verdict: str | None = None       # 매수 | 매도 | 관망
-    confidence: str | None = None    # 상 | 중 | 하
-    answer: str | None = None        # 전체 분석 본문
+from ..config.settings import Settings
+from ..dto.advice import QAResult
+from ..repository.stock_repository import fetch_stock_context, resolve_stock
+from .gemini_client import classify_stock_question, generate_advice
 
 
 def answer_question(settings: Settings, question: str) -> QAResult:

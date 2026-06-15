@@ -1,13 +1,13 @@
-"""StockContext → Claude 프롬프트(시스템/유저) 구성. (AI 주식전망)
+"""StockContext → Gemini 프롬프트(시스템/유저) 구성. (AI 주식전망)
 
 - 시스템: 역할·출력 형식·면책 규정. 전망(상승/하락/중립) + 매매의견(매수/매도/관망).
 - 유저: DB 사실(fact) 표 + "웹에서 최신 뉴스를 직접 수집해 분석하라" 지시.
-  뉴스는 DB 에 없으므로 모델이 web_search 툴로 직접 모은다.
+  뉴스는 DB 에 없으므로 모델이 Google 검색 grounding 으로 직접 모은다.
 """
 
 from __future__ import annotations
 
-from .models import StockContext
+from ..dto.stock import StockContext
 
 SYSTEM_PROMPT = """\
 당신은 한국 주식 모의투자 서비스 'jumisa' 의 AI 주식전망 애널리스트다.
