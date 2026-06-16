@@ -137,13 +137,15 @@ create table if not exists undervalue_score (
     stock_code   varchar(6)  not null references stock(stock_code),
     total_score  numeric(6,2),                                -- 종합 저평가 점수
     rank         integer,                                     -- 당일 순위
-    per_score    numeric(6,2),                                -- 세부: PER 기여 점수
-    pbr_score    numeric(6,2),                                -- 세부: PBR 기여 점수
+    per_score       numeric(6,2),                             -- 세부: PER 기여 점수 (0~100)
+    pbr_score       numeric(6,2),                             -- 세부: PBR 기여 점수 (0~100)
+    ev_ebitda_score numeric(6,2),                             -- 세부: EV/EBITDA 기여 점수 (0~100)
+    growth_score    numeric(6,2),                             -- 세부: 성장률 기여 점수 (0~100)
     created_at   timestamptz not null default now(),
     primary key (base_date, stock_code)
 );
 
-comment on table undervalue_score is '저평가 점수/랭킹 히스토리 (순위 추이). 적재 로직은 PER/PBR 가중치 확정 후 구현.';
+comment on table undervalue_score is '저평가 점수/랭킹 히스토리. 점수 = PER30% + PBR30% + EV/EBITDA25% + 성장률15% (기능정의서 v1.2). undervalueScoreJob(1시간 주기) 적재.';
 
 create index if not exists idx_uvscore_date_rank on undervalue_score (base_date, rank);
 
