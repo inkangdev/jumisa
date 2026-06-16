@@ -8,6 +8,7 @@ import BottomNav from "./BottomNav";
 import { NAV, type AppTab } from "./nav";
 import BattleTab from "../screens/battle/BattleTab";
 import AiAskModal from "../screens/ai/AiAskModal";
+import UndervalueScreen from "../screens/undervalue/UndervalueScreen";
 
 export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [tab, setTab] = useState<AppTab>("screener");
@@ -62,7 +63,9 @@ export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout:
 
         {/* 콘텐츠 영역 (탭 화면 자리) */}
         <div style={{ flex: 1, overflow: "auto" }}>
-          {tab === "battle" ? (
+          {tab === "screener" ? (
+            <UndervalueScreen />
+          ) : tab === "battle" ? (
             <BattleTab user={user} />
           ) : (
             <Placeholder tab={tab} label={current.label} icon={current.icon} onLogout={onLogout} user={user} />

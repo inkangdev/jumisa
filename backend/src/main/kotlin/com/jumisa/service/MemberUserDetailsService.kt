@@ -14,7 +14,7 @@ class MemberUserDetailsService(private val repo: MemberRepository) : UserDetails
         val m = repo.findByUsername(username)
             ?: throw UsernameNotFoundException("회원을 찾을 수 없습니다: $username")
         return User.withUsername(m.username)
-            .password(m.password)
+            .password(m.password ?: "{noop}KAKAO")   // 카카오 회원은 비번 없음
             .authorities("ROLE_USER")
             .build()
     }

@@ -21,6 +21,13 @@ services:
         sync: false
       - key: SUPABASE_DB_PASSWORD
         sync: false
+      # === 카카오 로그인 ===
+      - key: KAKAO_CLIENT_ID
+        sync: false
+      - key: KAKAO_CLIENT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://jumisa.onrender.com
       # === 선택: 배치/외부 API 키 (필요 시 주석 해제) ===
       # - key: BATCH_SCHEDULER_ENABLED
       #   value: "false"
@@ -74,16 +81,19 @@ services:
     buildCommand: npm ci && npm run build
     staticPublishPath: ./dist
     routes:
-      # /api/* 요청을 백엔드로 프록시 → 브라우저 입장에선 same-origin
-      # (세션 쿠키 인증이 정상 동작하도록. dev 의 vite proxy 를 프로덕션에서 재현)
-      # 백엔드 실제 배포 주소와 일치함(확인 완료).
       - type: rewrite
         source: /api/*
         destination: https://jumisa-backend.onrender.com/api/*
-      # /ai/* 요청을 파이썬 AI 서비스로 프록시 (dev 의 vite proxy 재현)
       - type: rewrite
         source: /ai/*
         destination: https://jumisa-ai.onrender.com/ai/*
+      # 카카오 OAuth2 — 백엔드로 프록시 (dev 의 vite proxy 재현)
+      - type: rewrite
+        source: /oauth2/*
+        destination: https://jumisa-backend.onrender.com/oauth2/*
+      - type: rewrite
+        source: /login/oauth2/*
+        destination: https://jumisa-backend.onrender.com/login/oauth2/*
       # SPA 라우팅: 나머지 경로는 index.html 로
       - type: rewrite
         source: /*

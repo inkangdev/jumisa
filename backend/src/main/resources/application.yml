@@ -14,10 +14,31 @@ spring:
       # Supabase Supavisor(트랜잭션 모드, 6543) 사용 시:
       # data-source-properties:
       #   prepareThreshold: 0
+  security:
+    # Render 등은 PORT 주입. 로컬은 SERVER_PORT, 둘 다 없으면 8080.
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: profile_nickname
+            client-name: 카카오
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
 
 server:
   # Render 등은 PORT 주입. 로컬은 SERVER_PORT, 둘 다 없으면 8080.
   port: ${PORT:${SERVER_PORT:8080}}
+  # Render/Vite 프록시 뒤에서 실행 → X-Forwarded-* 헤더로 실제 호스트/스킴 감지
+  forward-headers-strategy: framework
 
 management:
   endpoints:
