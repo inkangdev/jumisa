@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository
  *
  * 시총 = stock_price_snapshot 최신값(없으면 현재가 × 상장주식수), 재무 = stock_financials 최신 연간(fsc).
  * 각 지표를 거래가능 종목 백분위(0~100)로 점수화 후 가중합. 유효 지표만으로 가중치 정규화.
+ * PER/PBR 원값도 함께 저장(스크리너 표시·필터용).
  */
 @Repository
 class UndervalueRepository(private val jdbc: JdbcTemplate) {
@@ -24,7 +25,7 @@ class UndervalueRepository(private val jdbc: JdbcTemplate) {
     private companion object {
         const val SQL = """
             insert into undervalue_score
-              (base_date, stock_code, total_score, rank, per_score, pbr_score, ev_ebitda_score, growth_score)
+              (base_date, stock_code, total_score, rank, per_score, pbr_score, ev_ebitda_score, growth_score, per, pbr)
             with latest_snap as (
                 select distinct on (stock_code) stock_code, current_price, market_cap_eokwon
                 from stock_price_snapshot
@@ -71,7 +72,7 @@ class UndervalueRepository(private val jdbc: JdbcTemplate) {
             ev_s  as (select stock_code, (1 - percent_rank() over (order by ev_ebitda)) * 100 as s from metrics where ev_ebitda is not null),
             gr_s  as (select stock_code, (percent_rank() over (order by growth)) * 100 as s from metrics where growth is not null),
             combined as (
-                select m.stock_code,
+                select m.stock_code, m.per as per_val, m.pbr as pbr_val,
                        p.s as per_score, b.s as pbr_score, e.s as ev_score, g.s as growth_score,
                        (coalesce(p.s,0)*0.30 + coalesce(b.s,0)*0.30 + coalesce(e.s,0)*0.25 + coalesce(g.s,0)*0.15) as weighted,
                        ((case when p.s is not null then 0.30 else 0 end)
@@ -90,14 +91,16 @@ class UndervalueRepository(private val jdbc: JdbcTemplate) {
                        round(pbr_score::numeric, 2)    as pbr_score,
                        round(ev_score::numeric, 2)     as ev_ebitda_score,
                        round(growth_score::numeric, 2) as growth_score,
-                       round((weighted / wsum)::numeric, 2) as total_score
+                       round((weighted / wsum)::numeric, 2) as total_score,
+                       round(per_val, 2) as per,
+                       round(pbr_val, 2) as pbr
                 from combined
                 where wsum > 0
             )
             select (now() at time zone 'Asia/Seoul')::date as base_date,
                    stock_code, total_score,
                    rank() over (order by total_score desc) as rank,
-                   per_score, pbr_score, ev_ebitda_score, growth_score
+                   per_score, pbr_score, ev_ebitda_score, growth_score, per, pbr
             from final
             on conflict (base_date, stock_code) do update set
                 total_score     = excluded.total_score,
@@ -105,7 +108,9 @@ class UndervalueRepository(private val jdbc: JdbcTemplate) {
                 per_score       = excluded.per_score,
                 pbr_score       = excluded.pbr_score,
                 ev_ebitda_score = excluded.ev_ebitda_score,
-                growth_score    = excluded.growth_score
+                growth_score    = excluded.growth_score,
+                per             = excluded.per,
+                pbr             = excluded.pbr
         """
     }
 }

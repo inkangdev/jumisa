@@ -27,14 +27,14 @@ class ScreenerRepository(private val jdbc: JdbcTemplate) {
         sector: String?,
     ): List<ScreenerItem> {
         val orderBy = when (sort) {
-            "per"  -> "d.per ASC NULLS LAST, u.rank ASC"
-            "pbr"  -> "d.pbr ASC NULLS LAST, u.rank ASC"
+            "per"  -> "u.per ASC NULLS LAST, u.rank ASC"
+            "pbr"  -> "u.pbr ASC NULLS LAST, u.rank ASC"
             else   -> "u.rank ASC"
         }
         val conds = mutableListOf<String>()
         val args  = mutableListOf<Any>()
-        if (perMax != null)          { conds += "d.per <= ?";   args += perMax }
-        if (pbrMax != null)          { conds += "d.pbr <= ?";   args += pbrMax }
+        if (perMax != null)          { conds += "u.per <= ?";   args += perMax }
+        if (pbrMax != null)          { conds += "u.pbr <= ?";   args += pbrMax }
         if (!sector.isNullOrBlank()) { conds += "s.sector = ?"; args += sector }
 
         val extraWhere = if (conds.isEmpty()) "" else "AND " + conds.joinToString(" AND ")
@@ -42,12 +42,10 @@ class ScreenerRepository(private val jdbc: JdbcTemplate) {
         val sql = """
             SELECT u.stock_code, s.name, s.sector, s.market,
                    u.total_score, u.rank,
-                   d.per, d.pbr,
+                   u.per, u.pbr,
                    p.current_price, p.change_rate
             FROM undervalue_score u
             JOIN stock s ON s.stock_code = u.stock_code
-            LEFT JOIN stock_daily d
-                   ON d.stock_code = u.stock_code AND d.base_date = u.base_date
             LEFT JOIN LATERAL (
                 SELECT current_price, change_rate
                 FROM stock_price_snapshot
