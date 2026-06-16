@@ -1,0 +1,90 @@
+# jumisa 셀프 호스팅 스택 — 내 PC(24시간) = Render + Supabase 대체
+#
+#   db       : Postgres (Supabase 대체). named volume 'pgdata' 영속.
+#   backend  : Spring Boot (기존 backend/Dockerfile 재사용). 내부 전용.
+#   ai       : FastAPI (deploy/ai.Dockerfile). 내부 전용.
+#   web      : nginx — 프론트 dist 서빙 + /api·/ai·/oauth2 프록시. 호스트 8088 게시.
+#
+# 공개 노출은 Tailscale Funnel 이 web(8088) 을 https://<머신>.ts.net 으로 묶는다.
+# 비밀/설정 값은 레포 루트 .env (git 미커밋). 견본은 deploy/.env.example.
+#
+#   기동:  docker compose up -d --build
+#   상태:  docker compose ps
+#   로그:  docker compose logs -f backend
+#   중지:  docker compose down          (데이터 보존 — '-v' 절대 금지: 볼륨 삭제됨)
+
+services:
+  # ── DB: Postgres (Supabase 대체) ─────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jumisa}
+      POSTGRES_USER: ${POSTGRES_USER:-jumisa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD 를 .env 에 설정하세요}
+    ports:
+      - "5432:5432"            # 호스트 노출(로컬 배치/IntelliJ 가 접속)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # 최초 기동(빈 볼륨) 시에만 실행. 순서: 01 앱스키마 → 02 배치메타.
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./deploy/db-init/02-batch.sql:/docker-entrypoint-initdb.d/02-batch.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jumisa} -d ${POSTGRES_DB:-jumisa}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # ── backend: Spring Boot (기존 Dockerfile) ───────────────────
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # 로컬 DB 로 연결 (코드의 SUPABASE_* 변수명을 그대로 재사용, 값만 로컬).
+      SUPABASE_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      SUPABASE_DB_USER: ${POSTGRES_USER:-jumisa}
+      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}     # 로컬은 Supabase 15연결 한도 없음
+      PORT: "8080"
+      # 카카오 로그인 + 로그인 후 복귀 주소
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8088}
+    # 호스트 포트 게시 안 함 — nginx(web) 가 backend:8080 으로 내부 접근.
+
+  # ── ai: FastAPI (Gemini 주식전망) ────────────────────────────
+  ai:
+    build:
+      context: .
+      dockerfile: deploy/ai.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SUPABASE_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      SUPABASE_DB_USER: ${POSTGRES_USER:-jumisa}
+      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      AI_MODEL: ${AI_MODEL:-gemini-2.5-flash}
+      PORT: "8000"
+    # 내부 전용 — nginx(web) 가 ai:8000 으로 접근.
+
+  # ── web: nginx — 정적 프론트 + 리버스 프록시 ─────────────────
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - ai
+    ports:
+      - "8088:80"             # Tailscale Funnel 대상 (tailscale funnel 8088)
+
+volumes:
+  pgdata:

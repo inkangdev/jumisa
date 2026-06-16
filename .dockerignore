@@ -1,0 +1,26 @@
+# 루트 컨텍스트 빌드(web, ai)에서 제외 — 빌드 속도 + 비밀 유출 방지.
+.git
+.github
+.env
+.env.*
+!**/.env.example
+
+# node / 프론트 산출물 (이미지 안에서 새로 설치/빌드)
+**/node_modules
+**/dist
+**/*.tsbuildinfo
+
+# JVM/gradle 산출물 (backend 는 자체 Dockerfile 에서 빌드)
+**/build
+**/.gradle
+
+# python 캐시
+**/__pycache__
+**/*.pyc
+.venv
+
+# IDE / OS / 문서
+.idea
+*.iml
+.DS_Store
+docs
