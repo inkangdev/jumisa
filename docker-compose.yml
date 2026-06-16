@@ -96,6 +96,7 @@ services:
       KIS_APP_SECRET: ${KIS_APP_SECRET}
       KIS_ACCOUNT_NO: ${KIS_ACCOUNT_NO}
       KIS_ACCOUNT_PRODUCT_CODE: ${KIS_ACCOUNT_PRODUCT_CODE:-01}
+      KIS_RATE_PER_SECOND: ${KIS_RATE_PER_SECOND:-8}   # 실전 18 권장(.env), 모의면 2
       # KIS 접근토큰 캐시 — 볼륨에 영속(컨테이너 재시작 시 토큰 재발급 제한 회피)
       KIS_TOKEN_CACHE_PATH: /app/kis-data/token.json
       # 금융위 공공데이터(재무지표)
