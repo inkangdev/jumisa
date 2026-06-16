@@ -45,11 +45,11 @@ services:
       db:
         condition: service_healthy
     environment:
-      # 로컬 DB 로 연결 (코드의 SUPABASE_* 변수명을 그대로 재사용, 값만 로컬).
-      SUPABASE_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
-      SUPABASE_DB_USER: ${POSTGRES_USER:-jumisa}
-      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}     # 로컬은 Supabase 15연결 한도 없음
+      # 앱 DB 접속 — compose db 서비스(로컬 Postgres).
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      DB_USER: ${POSTGRES_USER:-jumisa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       PORT: "8080"
       # 카카오 로그인 + 로그인 후 복귀 주소
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -67,9 +67,9 @@ services:
       db:
         condition: service_healthy
     environment:
-      SUPABASE_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
-      SUPABASE_DB_USER: ${POSTGRES_USER:-jumisa}
-      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      DB_USER: ${POSTGRES_USER:-jumisa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       AI_MODEL: ${AI_MODEL:-gemini-2.5-flash}
       PORT: "8000"
@@ -84,11 +84,10 @@ services:
       db:
         condition: service_healthy
     environment:
-      # 로컬 DB 로 연결 (배치 코드의 BATCH_DB_URL/SUPABASE_* 재사용, 값만 로컬).
-      BATCH_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
-      SUPABASE_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
-      SUPABASE_DB_USER: ${POSTGRES_USER:-jumisa}
-      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # 앱 DB 접속 — compose db 서비스(로컬 Postgres).
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      DB_USER: ${POSTGRES_USER:-jumisa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       # 상주 스케줄러 ON — @Scheduled cron 자동 적재(평일 08시 마스터, 09~15시 매시 시세, 일요일 06시 재무, 매일 04:30 정리).
       BATCH_SCHEDULER_ENABLED: ${BATCH_SCHEDULER_ENABLED:-true}
       # 한국투자증권(KIS) Open API

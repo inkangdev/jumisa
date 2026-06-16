@@ -2,21 +2,18 @@ spring:
   application:
     name: jumisa-batch
 
-  # 비웹 앱 (서버 안 띄움). CLI 인자로 잡 실행 후 종료.
+  # 비웹 앱 (서버 안 띄움). 상주 스케줄러로 잡 자동 실행, 또는 CLI 인자로 일회성 실행.
   main:
     web-application-type: none
 
-  # === Supabase(Postgres) 연결 === (실제 값은 루트 .env)
-  # 배치는 트랜잭션 풀러(6543, BATCH_DB_URL)를 우선 사용 → 세션풀러(5432) 15한도 회피.
-  # BATCH_DB_URL 없으면 세션풀러로 폴백.
+  # === Postgres 연결 === (실제 값은 .env / docker compose, git 미커밋)
   datasource:
-    url: ${BATCH_DB_URL:${SUPABASE_DB_URL}}
-    username: ${SUPABASE_DB_USER}
-    password: ${SUPABASE_DB_PASSWORD}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      # 배치는 단일 스레드 + 대부분 유휴(상주 스케줄러). Supabase 무료 세션풀러(최대 15)를
-      # 웹앱과 나눠 써야 하므로, 놀 때는 연결을 0으로 반납하고 잡 돌 때만 잠깐 잡는다.
+      # 배치는 단일 스레드 + 대부분 유휴. 놀 때는 연결을 0으로 반납하고 잡 돌 때만 잠깐 잡는다.
       maximum-pool-size: 2
       minimum-idle: 0
       idle-timeout: 10000      # 10초 유휴 시 연결 반납
