@@ -21,6 +21,7 @@ class BatchScheduler(
     private val stockMasterJob: Job,
     private val priceSnapshotJob: Job,
     private val financeJob: Job,
+    private val undervalueScoreJob: Job,
     private val priceRepository: PriceRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -61,5 +62,12 @@ class BatchScheduler(
     fun runFinance() {
         val params = JobParametersBuilder().addLong("runAt", System.currentTimeMillis()).toJobParameters()
         jobLauncher.run(financeJob, params)
+    }
+
+    /** 저평가 점수 산출/적재: 1시간마다(매시 정각). PER30% + PBR30% + EV/EBITDA25% + 성장률15%. */
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
+    fun runUndervalueScore() {
+        val params = JobParametersBuilder().addLong("runAt", System.currentTimeMillis()).toJobParameters()
+        jobLauncher.run(undervalueScoreJob, params)
     }
 }
