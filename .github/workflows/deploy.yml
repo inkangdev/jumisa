@@ -37,7 +37,9 @@ jobs:
 
       - name: Build & deploy (docker compose)
         run: |
+          $ErrorActionPreference = "Stop"
           docker compose up -d --build --remove-orphans
+          if ($LASTEXITCODE -ne 0) { Write-Error "docker compose 빌드/기동 실패 (exit $LASTEXITCODE)"; exit $LASTEXITCODE }
           docker compose ps
 
       - name: 미사용 이미지 정리
