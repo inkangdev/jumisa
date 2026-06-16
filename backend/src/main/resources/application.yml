@@ -11,6 +11,13 @@ spring:
     hikari:
       # Supabase 무료 세션풀러는 클라이언트 최대 15. 배치/로컬개발과 나눠 쓰려고 작게.
       maximum-pool-size: ${DB_POOL_SIZE:5}
+      # 커넥션 못 얻으면 30초(기본) 대신 10초 만에 실패 → 먹통 대신 빠른 에러.
+      connection-timeout: 10000
+      # idle 커넥션을 2분마다 살려, Supabase/네트워크 idle 끊김으로 인한
+      # "죽은 커넥션" 발급(간헐 지연/에러)을 예방. (max-lifetime 보다 작아야 함)
+      keepalive-time: 120000
+      # 30분(기본)보다 짧게 재생성해 오래된/끊긴 커넥션 누적 방지.
+      max-lifetime: 1500000
       # Supabase Supavisor(트랜잭션 모드, 6543) 사용 시:
       # data-source-properties:
       #   prepareThreshold: 0

@@ -1,5 +1,6 @@
 package com.jumisa.controller
 import com.jumisa.repository.MemberRepository
+import com.jumisa.service.MemberPrincipal
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -63,8 +64,9 @@ class AuthController(
         SecurityContextHolder.setContext(context)
         securityContextRepository.saveContext(context, request, response)
 
-        val member = repo.findByUsername(auth.name)
-        return ResponseEntity.ok(UserResponse(auth.name, member?.avatar))
+        // avatar 는 인증 시 적재된 principal 에서 읽어 member 재조회를 피한다.
+        val principal = auth.principal as? MemberPrincipal
+        return ResponseEntity.ok(UserResponse(auth.name, principal?.avatar))
     }
 
     @GetMapping("/me")

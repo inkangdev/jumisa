@@ -1,7 +1,6 @@
 package com.jumisa.service
 import com.jumisa.repository.*
 
-import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -13,9 +12,6 @@ class MemberUserDetailsService(private val repo: MemberRepository) : UserDetails
     override fun loadUserByUsername(username: String): UserDetails {
         val m = repo.findByUsername(username)
             ?: throw UsernameNotFoundException("회원을 찾을 수 없습니다: $username")
-        return User.withUsername(m.username)
-            .password(m.password)
-            .authorities("ROLE_USER")
-            .build()
+        return MemberPrincipal(m.username, m.password, m.avatar)
     }
 }
