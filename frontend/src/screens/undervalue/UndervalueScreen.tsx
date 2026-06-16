@@ -45,6 +45,7 @@ const SORT_OPTS: { v: ScreenerSort; label: string }[] = [
 export default function UndervalueScreen() {
   const [market,     setMarket]     = useState<"kr" | "us">("kr");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [query,      setQuery]      = useState("");
   const [sort,       setSort]       = useState<ScreenerSort>("score");
   const [perMax,     setPerMax]     = useState(PER_MAX);
   const [pbrMax,     setPbrMax]     = useState(PBR_MAX);
@@ -72,6 +73,13 @@ export default function UndervalueScreen() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // 종목명·코드 즉시 검색 (클라이언트 필터)
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? items.filter((it) =>
+        (it.name ?? "").toLowerCase().includes(q) || it.stockCode.toLowerCase().includes(q))
+    : items;
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg, fontFamily: T.sans }}>
 
@@ -79,13 +87,6 @@ export default function UndervalueScreen() {
       <div style={{ padding: "20px 16px 8px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <div>
           <div style={{ fontSize: 22, fontWeight: 900, color: T.text }}>저평가 스크리너</div>
-          <div style={{ fontSize: 13, color: T.sub, marginTop: 2 }}>
-            {loading ? "불러오는 중…" : `${items.length}개 종목`}
-          </div>
-          <div style={{ fontSize: 11.5, color: T.mute, marginTop: 5, lineHeight: 1.5, maxWidth: 280 }}>
-            왼쪽 원형은 <b style={{ color: T.sub }}>저평가 점수</b>(0~100, 높을수록 저평가).
-            PER·PBR·EV/EBITDA·성장률을 시장 전체와 비교해 매깁니다. 오른쪽은 현재가·등락률.
-          </div>
         </div>
         <button
           onClick={() => setFilterOpen((o) => !o)}
@@ -104,6 +105,36 @@ export default function UndervalueScreen() {
       <div style={{ padding: "0 16px 10px", display: "flex", gap: 8 }}>
         <MarketTab label="🇰🇷 국내" active={market === "kr"} onClick={() => setMarket("kr")} />
         <MarketTab label="🇺🇸 미국" active={market === "us"} onClick={() => setMarket("us")} disabled />
+      </div>
+
+      {/* ── 종목명 검색 ──────────────────────────────────────────────────── */}
+      <div style={{ padding: "0 16px 10px", position: "relative" }}>
+        <span style={{
+          position: "absolute", left: 28, top: "50%", transform: "translateY(-50%)",
+          fontSize: 14, color: T.mute, pointerEvents: "none",
+        }}>🔍</span>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="종목명·코드 검색"
+          style={{
+            width: "100%", boxSizing: "border-box",
+            padding: "9px 34px 9px 36px", borderRadius: 10,
+            border: `1px solid ${T.border}`, background: T.card,
+            color: T.text, fontFamily: T.sans, fontSize: 14, outline: "none",
+          }}
+        />
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            style={{
+              position: "absolute", right: 26, top: "50%", transform: "translateY(-50%)",
+              width: 20, height: 20, borderRadius: "50%", border: "none",
+              background: T.card2, color: T.sub, fontSize: 12, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
+            }}
+          >✕</button>
+        )}
       </div>
 
       {/* ── 필터 패널 ─────────────────────────────────────────────────────── */}
@@ -127,8 +158,10 @@ export default function UndervalueScreen() {
           <Empty icon="⚠️" msg={error} />
         ) : items.length === 0 ? (
           <Empty icon="📊" msg={"저평가 점수 데이터를 적재 중입니다\n잠시 후 다시 확인해 주세요"} />
+        ) : visible.length === 0 ? (
+          <Empty icon="🔍" msg={`'${query.trim()}' 검색 결과가 없습니다`} />
         ) : (
-          items.map((item) => <StockCard key={item.stockCode} item={item} />)
+          visible.map((item) => <StockCard key={item.stockCode} item={item} />)
         )}
       </div>
     </div>
