@@ -96,8 +96,8 @@ export default function App() {
   );
 }
 
-// 부팅 중(세션 확인) 화면. Render 무료플랜 콜드스타트로 백엔드가 깨어나는
-// 동안 빈 화면(까만 배경)만 보이던 문제를 로고 + 스피너로 대체한다.
+// 부팅 중(세션 확인) 화면. 백엔드 응답 대기 동안 빈 화면(까만 배경)만
+// 보이던 문제를 로고 + 스피너로 대체한다.
 function BootingView() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 20 }}>

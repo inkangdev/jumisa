@@ -2,20 +2,15 @@ spring:
   application:
     name: jumisa-app
 
-  # === Supabase(Postgres) 연결 === (실제 값은 backend/.env, git 미커밋)
+  # === Postgres 연결 === (실제 값은 .env / docker compose, git 미커밋)
   datasource:
-    url: ${SUPABASE_DB_URL}
-    username: ${SUPABASE_DB_USER}
-    password: ${SUPABASE_DB_PASSWORD}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      # Supabase 무료 세션풀러는 클라이언트 최대 15. 배치/로컬개발과 나눠 쓰려고 작게.
-      maximum-pool-size: ${DB_POOL_SIZE:5}
-      # Supabase Supavisor(트랜잭션 모드, 6543) 사용 시:
-      # data-source-properties:
-      #   prepareThreshold: 0
+      maximum-pool-size: ${DB_POOL_SIZE:20}
   security:
-    # Render 등은 PORT 주입. 로컬은 SERVER_PORT, 둘 다 없으면 8080.
     oauth2:
       client:
         registration:
@@ -35,9 +30,9 @@ spring:
             user-name-attribute: id
 
 server:
-  # Render 등은 PORT 주입. 로컬은 SERVER_PORT, 둘 다 없으면 8080.
+  # 컨테이너는 PORT 주입(nginx 뒤). 로컬은 SERVER_PORT, 둘 다 없으면 8080.
   port: ${PORT:${SERVER_PORT:8080}}
-  # Render/Vite 프록시 뒤에서 실행 → X-Forwarded-* 헤더로 실제 호스트/스킴 감지
+  # 리버스 프록시(nginx) 뒤에서 실행 → X-Forwarded-* 헤더로 실제 호스트/스킴 감지
   forward-headers-strategy: framework
 
 management:

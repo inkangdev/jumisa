@@ -8,8 +8,6 @@ import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
-import java.time.Instant
-import java.time.temporal.ChronoUnit
 
 /**
  * 배치 스케줄러 (Asia/Seoul, 주말 제외). 기본 비활성:
@@ -27,6 +25,10 @@ class BatchScheduler(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    private companion object {
+        const val SNAPSHOT_BUCKET_MS = 5 * 60_000L   // 시세 스냅샷 5분 격자
+    }
+
     /** 종목 마스터 갱신: 장 시작 전. */
     @Scheduled(cron = "0 0 8 * * MON-FRI", zone = "Asia/Seoul")
     fun runStockMaster() {
@@ -34,10 +36,12 @@ class BatchScheduler(
         jobLauncher.run(stockMasterJob, params)
     }
 
-    /** 시세 스냅샷: 장중 매시 정각 (09~15시). */
-    @Scheduled(cron = "0 0 9-15 * * MON-FRI", zone = "Asia/Seoul")
+    /** 시세 스냅샷: 장중(09~15시) 5분 간격. */
+    @Scheduled(cron = "0 */5 9-15 * * MON-FRI", zone = "Asia/Seoul")
     fun runPriceSnapshot() {
-        val snapshotAt = Instant.now().truncatedTo(ChronoUnit.HOURS).toEpochMilli()
+        // snapshot_at(유니크 키)을 5분 격자로 내림 → 5분마다 다른 시각으로 적재.
+        val nowMs = System.currentTimeMillis()
+        val snapshotAt = nowMs - (nowMs % SNAPSHOT_BUCKET_MS)
         val params = JobParametersBuilder()
             .addLong("snapshotAt", snapshotAt)
             .addLong("runAt", System.currentTimeMillis())

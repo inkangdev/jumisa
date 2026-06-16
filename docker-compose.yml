@@ -4,6 +4,7 @@
 #   backend  : Spring Boot (기존 backend/Dockerfile 재사용). 내부 전용.
 #   ai       : FastAPI (deploy/ai.Dockerfile). 내부 전용.
 #   web      : nginx — 프론트 dist 서빙 + /api·/ai·/oauth2 프록시. 호스트 8088 게시.
+#   batch    : Spring Batch (batch/Dockerfile). 비웹 — @Scheduled 로 KIS 시세/마스터/재무 자동 적재.
 #
 # 공개 노출은 Tailscale Funnel 이 web(8088) 을 https://<머신>.ts.net 으로 묶는다.
 # 비밀/설정 값은 레포 루트 .env (git 미커밋). 견본은 deploy/.env.example.
@@ -44,11 +45,11 @@ services:
       db:
         condition: service_healthy
     environment:
-      # 로컬 DB 로 연결 (코드의 SUPABASE_* 변수명을 그대로 재사용, 값만 로컬).
-      SUPABASE_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
-      SUPABASE_DB_USER: ${POSTGRES_USER:-jumisa}
-      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}     # 로컬은 Supabase 15연결 한도 없음
+      # 앱 DB 접속 — compose db 서비스(로컬 Postgres).
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      DB_USER: ${POSTGRES_USER:-jumisa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
       PORT: "8080"
       # 카카오 로그인 + 로그인 후 복귀 주소
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -66,13 +67,43 @@ services:
       db:
         condition: service_healthy
     environment:
-      SUPABASE_DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
-      SUPABASE_DB_USER: ${POSTGRES_USER:-jumisa}
-      SUPABASE_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      DB_USER: ${POSTGRES_USER:-jumisa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       AI_MODEL: ${AI_MODEL:-gemini-2.5-flash}
       PORT: "8000"
     # 내부 전용 — nginx(web) 가 ai:8000 으로 접근.
+
+  # ── batch: Spring Batch 스케줄러 (KIS 시세/마스터/재무 자동 적재) ─
+  batch:
+    build:
+      context: ./batch
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # 앱 DB 접속 — compose db 서비스(로컬 Postgres).
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-jumisa}
+      DB_USER: ${POSTGRES_USER:-jumisa}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # 상주 스케줄러 ON — @Scheduled cron 자동 적재(평일 08시 마스터, 09~15시 매시 시세, 일요일 06시 재무, 매일 04:30 정리).
+      BATCH_SCHEDULER_ENABLED: ${BATCH_SCHEDULER_ENABLED:-true}
+      # 한국투자증권(KIS) Open API
+      KIS_ENV: ${KIS_ENV:-vts}
+      KIS_APP_KEY: ${KIS_APP_KEY}
+      KIS_APP_SECRET: ${KIS_APP_SECRET}
+      KIS_ACCOUNT_NO: ${KIS_ACCOUNT_NO}
+      KIS_ACCOUNT_PRODUCT_CODE: ${KIS_ACCOUNT_PRODUCT_CODE:-01}
+      KIS_RATE_PER_SECOND: ${KIS_RATE_PER_SECOND:-8}   # 실전 18 권장(.env), 모의면 2
+      # KIS 접근토큰 캐시 — 볼륨에 영속(컨테이너 재시작 시 토큰 재발급 제한 회피)
+      KIS_TOKEN_CACHE_PATH: /app/kis-data/token.json
+      # 금융위 공공데이터(재무지표)
+      DATA_GO_KR_SERVICE_KEY: ${DATA_GO_KR_SERVICE_KEY}
+    volumes:
+      - kis_token:/app/kis-data
+    # 내부 전용 — 포트 게시 없음(비웹, 스케줄러만 상주).
 
   # ── web: nginx — 정적 프론트 + 리버스 프록시 ─────────────────
   web:
@@ -88,3 +119,4 @@ services:
 
 volumes:
   pgdata:
+  kis_token:        # batch 의 KIS 접근토큰 캐시 영속

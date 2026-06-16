@@ -34,4 +34,4 @@
 
 작업 전 아래 문서를 **숙지**한다(규칙 2).
 
-- `docs/ops/배포.md` — Render 배포/운영 레퍼런스.
+- `docs/ops/셀프호스팅.md` — 셀프호스팅(내 PC = Render+Supabase 대체) 배포/운영 레퍼런스.

@@ -1,7 +1,7 @@
 """환경설정 로딩.
 
-- DB는 jumisa 백엔드와 **동일한 Supabase Postgres** 를 그대로 쓴다.
-  `.env` 의 `SUPABASE_DB_URL`(JDBC 형식)·`SUPABASE_DB_USER`·`SUPABASE_DB_PASSWORD` 를 재사용한다.
+- DB는 jumisa 백엔드와 **동일한 Postgres** 를 그대로 쓴다.
+  `.env` 의 `DB_URL`(JDBC 형식)·`DB_USER`·`DB_PASSWORD` 를 재사용한다.
 - AI 는 **Google Gemini(무료 등급)** 를 사용한다. `GEMINI_API_KEY` (aistudio.google.com 발급).
 
 `.env` 탐색 순서: 이 프로젝트 폴더(`ai/.env`) → 레포 루트(`.env`).
@@ -64,7 +64,7 @@ def load_settings() -> Settings:
 
     missing = [
         name
-        for name in ("SUPABASE_DB_URL", "SUPABASE_DB_USER", "SUPABASE_DB_PASSWORD", "GEMINI_API_KEY")
+        for name in ("DB_URL", "DB_USER", "DB_PASSWORD", "GEMINI_API_KEY")
         if not os.environ.get(name)
     ]
     if missing:
@@ -75,9 +75,9 @@ def load_settings() -> Settings:
         )
 
     return Settings(
-        db_url=os.environ["SUPABASE_DB_URL"],
-        db_user=os.environ["SUPABASE_DB_USER"],
-        db_password=os.environ["SUPABASE_DB_PASSWORD"],
+        db_url=os.environ["DB_URL"],
+        db_user=os.environ["DB_USER"],
+        db_password=os.environ["DB_PASSWORD"],
         gemini_api_key=os.environ["GEMINI_API_KEY"],
         model=os.environ.get("AI_MODEL", DEFAULT_MODEL),
     )
