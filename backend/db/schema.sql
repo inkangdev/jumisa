@@ -141,6 +141,8 @@ create table if not exists undervalue_score (
     pbr_score       numeric(6,2),                             -- 세부: PBR 기여 점수 (0~100)
     ev_ebitda_score numeric(6,2),                             -- 세부: EV/EBITDA 기여 점수 (0~100)
     growth_score    numeric(6,2),                             -- 세부: 성장률 기여 점수 (0~100)
+    per             numeric(12,2),                            -- PER 원값 (시총/순이익) — 스크리너 표시/필터
+    pbr             numeric(12,2),                            -- PBR 원값 (시총/순자본) — 스크리너 표시/필터
     created_at   timestamptz not null default now(),
     primary key (base_date, stock_code)
 );

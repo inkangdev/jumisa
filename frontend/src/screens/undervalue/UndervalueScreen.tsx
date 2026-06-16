@@ -82,6 +82,10 @@ export default function UndervalueScreen() {
           <div style={{ fontSize: 13, color: T.sub, marginTop: 2 }}>
             {loading ? "불러오는 중…" : `${items.length}개 종목`}
           </div>
+          <div style={{ fontSize: 11.5, color: T.mute, marginTop: 5, lineHeight: 1.5, maxWidth: 280 }}>
+            왼쪽 원형은 <b style={{ color: T.sub }}>저평가 점수</b>(0~100, 높을수록 저평가).
+            PER·PBR·EV/EBITDA·성장률을 시장 전체와 비교해 매깁니다. 오른쪽은 현재가·등락률.
+          </div>
         </div>
         <button
           onClick={() => setFilterOpen((o) => !o)}
