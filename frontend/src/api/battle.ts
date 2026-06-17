@@ -74,13 +74,18 @@ export type RoomsResponse = {
   myWaiting: RoomSummary[];
 };
 
+import { notifyUnauthorized } from "./session";
+
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
 async function get<T>(path: string): Promise<Result<T>> {
   try {
     const res = await fetch(path, { credentials: "include" });
     const data = await res.json().catch(() => null);
-    if (!res.ok) return { ok: false, error: data?.error || `오류 (${res.status})` };
+    if (!res.ok) {
+      if (res.status === 401) notifyUnauthorized();
+      return { ok: false, error: data?.error || `오류 (${res.status})` };
+    }
     return { ok: true, data: data as T };
   } catch {
     return { ok: false, error: "서버에 연결할 수 없습니다" };
@@ -96,7 +101,10 @@ async function post<T>(path: string, body?: unknown): Promise<Result<T>> {
       body: body != null ? JSON.stringify(body) : undefined,
     });
     const data = await res.json().catch(() => null);
-    if (!res.ok) return { ok: false, error: data?.error || `오류 (${res.status})` };
+    if (!res.ok) {
+      if (res.status === 401) notifyUnauthorized();
+      return { ok: false, error: data?.error || `오류 (${res.status})` };
+    }
     return { ok: true, data: data as T };
   } catch {
     return { ok: false, error: "서버에 연결할 수 없습니다" };
