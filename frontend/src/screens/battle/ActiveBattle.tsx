@@ -37,11 +37,7 @@ function useCountUp(target: number, duration = 700) {
   return val;
 }
 
-const fmtP = (n: number) => {
-  if (n >= 1e8) return (n / 1e8).toFixed(1) + "억";
-  if (n >= 1e4) return Math.round(n / 1e4) + "만";
-  return n.toLocaleString();
-};
+const fmtP = (n: number) => n.toLocaleString();
 
 const rankMedal = (r: number) => (r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : `${r}위`);
 
