@@ -174,9 +174,87 @@ function AnimatedRankRow({ p, i, myUsername }: { p: RankingEntry; i: number; myU
   );
 }
 
+function RaceTrack({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
+  const rates = ranking.map((r) => r.returnRate);
+  const min = Math.min(...rates);
+  const max = Math.max(...rates);
+  const spread = max - min;
+
+  // 전원 동률이면 중앙, 아니면 12%~88% 사이로 정규화
+  const toPos = (rate: number) =>
+    spread < 0.001 ? 50 : 12 + ((rate - min) / spread) * 76;
+
+  return (
+    <div style={{
+      background: T.card2, borderRadius: 16,
+      padding: "12px 12px 10px", marginBottom: 12,
+      border: `1px solid ${T.border}`,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: T.mute, marginBottom: 10, letterSpacing: 1.5 }}>
+        ⚡ LIVE RACE
+      </div>
+      {ranking.map((p, i) => {
+        const pos = toPos(p.returnRate);
+        const isMe = p.username === myUsername;
+        return (
+          <div key={p.memberId} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: i < ranking.length - 1 ? 6 : 0 }}>
+            {/* 순위 */}
+            <div style={{
+              width: 18, fontSize: 11, fontWeight: 900, textAlign: "right", flexShrink: 0,
+              color: i === 0 ? T.amber : i === 1 ? "#aaa" : i === 2 ? "#cd7f32" : T.mute,
+            }}>
+              {i + 1}
+            </div>
+
+            {/* 트랙 */}
+            <div style={{ flex: 1, height: 28, position: "relative" }}>
+              {/* 배경 + 진행 바 (overflow hidden으로 둥근 모서리 유지) */}
+              <div style={{ position: "absolute", inset: 0, background: `${T.mute}18`, borderRadius: 14, overflow: "hidden" }}>
+                <div style={{
+                  position: "absolute", left: 0, top: 0, bottom: 0,
+                  width: `${pos}%`,
+                  background: isMe
+                    ? `linear-gradient(90deg, transparent, ${T.accent}35)`
+                    : `linear-gradient(90deg, transparent, ${T.border})`,
+                  transition: "width 1.2s cubic-bezier(0.34,1.56,0.64,1)",
+                }} />
+              </div>
+              {/* 아바타 (트랙 밖으로 넘쳐도 잘리지 않도록 별도 레이어) */}
+              <div style={{
+                position: "absolute",
+                left: `${pos}%`,
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+                transition: "left 1.2s cubic-bezier(0.34,1.56,0.64,1)",
+                fontSize: 18,
+                lineHeight: 1,
+                filter: isMe ? `drop-shadow(0 0 5px ${T.accent})` : undefined,
+                zIndex: 1,
+              }}>
+                {p.avatar ?? "🐂"}
+              </div>
+            </div>
+
+            {/* 닉네임 */}
+            <div style={{
+              width: 54, fontSize: 10,
+              color: isMe ? T.accentL : T.sub,
+              fontWeight: isMe ? 700 : 400,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0,
+            }}>
+              {p.username}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function RankTab({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
   return (
     <div>
+      <RaceTrack ranking={ranking} myUsername={myUsername} />
       {ranking.map((p, i) => (
         <AnimatedRankRow key={p.memberId} p={p} i={i} myUsername={myUsername} />
       ))}
