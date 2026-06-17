@@ -9,6 +9,7 @@ import { NAV, type AppTab } from "./nav";
 import BattleTab from "../screens/battle/BattleTab";
 import AiAskModal from "../screens/ai/AiAskModal";
 import UndervalueScreen from "../screens/undervalue/UndervalueScreen";
+import WatchlistScreen from "../screens/watchlist/WatchlistScreen";
 
 export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
   const [tab, setTab] = useState<AppTab>("screener");
@@ -67,6 +68,8 @@ export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout:
             <UndervalueScreen />
           ) : tab === "battle" ? (
             <BattleTab user={user} />
+          ) : tab === "watchlist" ? (
+            <WatchlistScreen />
           ) : (
             <Placeholder tab={tab} label={current.label} icon={current.icon} onLogout={onLogout} user={user} />
           )}

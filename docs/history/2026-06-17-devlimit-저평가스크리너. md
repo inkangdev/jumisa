@@ -1,0 +1,97 @@
+# 저평가 스크리너 관심종목 별표 토글 + 관심종목 탭
+
+스크리너 종목 카드의 ☆ 버튼으로 관심종목 추가/제거.
+관심종목 탭에서 목록 확인 + 최신순/가격순/등락률순/점수순 정렬.
+
+---
+
+## 1. DB — `watchlist` 테이블 추가
+
+`backend/db/schema.sql` 맨 아래에 추가:
+
+```sql
+-- ─────────────────────────────────────────────
+-- 8) 관심종목 (watchlist)
+-- ─────────────────────────────────────────────
+create table if not exists watchlist (
+    member_id  bigint     not null references member(id) on delete cascade,
+    stock_code varchar(6) not null references stock(stock_code) on delete cascade,
+    created_at timestamptz not null default now(),
+    primary key (member_id, stock_code)
+);
+
+comment on table watchlist is '회원별 관심종목. (member_id, stock_code) 복합 PK — 중복 불가.';
+```
+
+기존 볼륨에는 init 스크립트가 재실행되지 않으므로 직접 마이그레이션:
+```bash
+docker compose exec db psql -U jumisa -d jumisa -c "
+create table if not exists watchlist (
+    member_id  bigint     not null references member(id) on delete cascade,
+    stock_code varchar(6) not null references stock(stock_code) on delete cascade,
+    created_at timestamptz not null default now(),
+    primary key (member_id, stock_code)
+);
+"
+```
+
+---
+
+## 2. 백엔드
+
+### 2-1. `WatchlistRepository.kt` 신규 생성
+
+`backend/src/main/kotlin/com/jumisa/repository/WatchlistRepository.kt`
+
+- `findItemsByMember(memberId, sort)` — watchlist JOIN stock + LATERAL undervalue_score + LATERAL stock_price_snapshot
+- sort: `recent`(w.created_at DESC) / `price`(current_price DESC) / `rate`(change_rate DESC) / `score`(total_score DESC)
+- `add` / `remove` — on conflict do nothing
+
+### 2-2. `WatchlistController.kt` 신규 생성
+
+`backend/src/main/kotlin/com/jumisa/controller/WatchlistController.kt`
+
+- `GET /api/watchlist?sort=recent` → `{ items: List<ScreenerItem> }`
+- `POST /api/watchlist/{stockCode}` → 추가
+- `DELETE /api/watchlist/{stockCode}` → 제거
+
+SecurityConfig 건드리지 않음 — `.anyRequest().authenticated()`로 이미 보호됨.
+
+---
+
+## 3. 프론트엔드
+
+### 3-1. `api/watchlist.ts` 신규 생성
+
+- `fetchWatchlist(sort)` — GET `/api/watchlist?sort=...` → `{ items: ScreenerItem[] }`
+- `toggleWatchlist(stockCode, isWatched)` — POST(추가) / DELETE(제거)
+
+### 3-2. `screens/watchlist/WatchlistScreen.tsx` 신규 생성
+
+- 헤더 "관심종목" + 정렬 탭 4개(최신순/가격순/등락률순/점수순)
+- 종목 카드 목록 (점수뱃지·종목명·PER·PBR·가격·등락률·★버튼)
+- ★ 클릭 시 관심종목 제거 + 목록에서 즉시 제거
+- 빈 상태: "스크리너에서 ☆를 눌러 담으세요"
+
+### 3-3. `screens/undervalue/UndervalueScreen.tsx` 수정
+
+- `watched: Set<string>` state 추가
+- 마운트 시 `fetchWatchlist()` 호출 → stockCode Set 구성
+- `StockCard`에 `isWatched`, `onToggle` prop 추가
+- ☆/★ 토글 핸들러 연결
+
+### 3-4. `layout/AppShell.tsx` 수정
+
+- `tab === "watchlist"` 분기 추가 → `<WatchlistScreen />`
+
+---
+
+## 확인 사항
+
+- [ ] DB 테이블 생성 완료
+- [ ] ☆ 클릭 → ★로 변경 (관심종목 추가)
+- [ ] ★ 클릭 → ☆로 변경 (관심종목 제거)
+- [ ] 관심종목 탭 진입 시 담은 종목 목록 표시
+- [ ] 정렬 탭(최신순/가격순/등락률순/점수순) 전환 동작
+- [ ] 관심종목 탭에서 ★ 클릭 → 목록에서 즉시 제거
+- [ ] 페이지 재진입 시 기존 관심종목 ★ 유지
