@@ -1,3 +1,5 @@
+import { notifyUnauthorized } from "./session";
+
 export type ScreenerItem = {
   stockCode: string;
   name: string | null;
@@ -38,7 +40,10 @@ export async function fetchScreener(params: ScreenerParams = {}): Promise<Result
 
     const res = await fetch(`/api/screener?${qs}`, { credentials: "include" });
     const data = await res.json().catch(() => null);
-    if (!res.ok) return { ok: false, error: (data as { error?: string })?.error ?? `오류 (${res.status})` };
+    if (!res.ok) {
+      if (res.status === 401) notifyUnauthorized();
+      return { ok: false, error: (data as { error?: string })?.error ?? `오류 (${res.status})` };
+    }
     return { ok: true, data: data as ScreenerResponse };
   } catch {
     return { ok: false, error: "서버에 연결할 수 없습니다" };

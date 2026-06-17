@@ -28,7 +28,14 @@ class AuthController(
 ) {
     data class SignupRequest(val username: String, val password: String, val avatar: String?)
     data class LoginRequest(val username: String, val password: String)
+    data class AvatarRequest(val avatar: String?)
+    data class UsernameRequest(val username: String?)
     data class UserResponse(val username: String, val avatar: String?)
+
+    companion object {
+        // 선택 가능한 아바타(프론트 AVATARS 와 동일하게 유지).
+        val AVATARS = setOf("🐂", "🦅", "🐻", "🦁", "🦊", "🐯", "🦈", "🦋")
+    }
 
     @PostMapping("/signup")
     fun signup(@RequestBody req: SignupRequest): ResponseEntity<Any> {
@@ -73,6 +80,54 @@ class AuthController(
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val member = repo.findByUsername(authentication.name)
         return ResponseEntity.ok(UserResponse(authentication.name, member?.avatar))
+    }
+
+    @PostMapping("/avatar")
+    fun updateAvatar(@RequestBody req: AvatarRequest, authentication: Authentication?): ResponseEntity<Any> {
+        if (authentication == null || !authentication.isAuthenticated)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+        val avatar = req.avatar?.trim().orEmpty()
+        if (avatar !in AVATARS)
+            return ResponseEntity.badRequest().body(mapOf("error" to "선택할 수 없는 아바타입니다"))
+
+        repo.updateAvatar(authentication.name, avatar)
+        return ResponseEntity.ok(UserResponse(authentication.name, avatar))
+    }
+
+    @PostMapping("/username")
+    fun updateUsername(
+        @RequestBody req: UsernameRequest,
+        authentication: Authentication?,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<Any> {
+        if (authentication == null || !authentication.isAuthenticated)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+
+        val current = authentication.name
+        val username = req.username?.trim().orEmpty()
+        if (username.isBlank())
+            return ResponseEntity.badRequest().body(mapOf("error" to "닉네임을 입력하세요"))
+        if (username.length > 30)
+            return ResponseEntity.badRequest().body(mapOf("error" to "닉네임은 30자 이하여야 합니다"))
+
+        val member = repo.findByUsername(current)
+            ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
+
+        if (username != current) {
+            if (repo.existsByUsername(username))
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(mapOf("error" to "이미 사용 중인 닉네임입니다"))
+            repo.updateUsername(current, username)
+
+            // 세션 principal(authentication.name)이 옛 닉네임으로 남으면 /me 등이 깨지므로 갱신.
+            val newAuth = UsernamePasswordAuthenticationToken(username, null, authentication.authorities)
+            val context = SecurityContextHolder.createEmptyContext()
+            context.authentication = newAuth
+            SecurityContextHolder.setContext(context)
+            securityContextRepository.saveContext(context, request, response)
+        }
+
+        return ResponseEntity.ok(UserResponse(username, member.avatar))
     }
 
     @PostMapping("/logout")

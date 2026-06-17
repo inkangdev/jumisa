@@ -28,6 +28,14 @@ class MemberRepository(private val jdbc: JdbcTemplate) {
         jdbc.update("insert into member (username, password, avatar) values (?, ?, ?)", username, encodedPassword, avatar)
     }
 
+    fun updateAvatar(username: String, avatar: String) {
+        jdbc.update("update member set avatar = ? where username = ?", avatar, username)
+    }
+
+    fun updateUsername(currentUsername: String, newUsername: String) {
+        jdbc.update("update member set username = ? where username = ?", newUsername, currentUsername)
+    }
+
     // ── 소셜 로그인 ──────────────────────────────────────────────────────────────
 
     fun findBySocialAccount(provider: String, providerId: String): MemberRow? =

@@ -3,14 +3,24 @@
 // (탭 화면은 추후 각 담당자가 AppTab id 에 맞춰 끼운다. 대결은 feature/battle.)
 import { useState } from "react";
 import { T } from "../theme";
+import * as auth from "../api/auth";
 import type { AuthUser } from "../api/auth";
 import BottomNav from "./BottomNav";
 import { NAV, type AppTab } from "./nav";
 import BattleTab from "../screens/battle/BattleTab";
 import AiAskModal from "../screens/ai/AiAskModal";
 import UndervalueScreen from "../screens/undervalue/UndervalueScreen";
+import { AvatarPicker } from "../screens/authUi";
 
-export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+export default function AppShell({
+  user,
+  onLogout,
+  onUserChange,
+}: {
+  user: AuthUser;
+  onLogout: () => void;
+  onUserChange: (u: AuthUser) => void;
+}) {
   const [tab, setTab] = useState<AppTab>("screener");
   const [aiOpen, setAiOpen] = useState(false);
   const current = NAV.find((n) => n.id === tab)!;
@@ -68,7 +78,7 @@ export default function AppShell({ user, onLogout }: { user: AuthUser; onLogout:
           ) : tab === "battle" ? (
             <BattleTab user={user} />
           ) : (
-            <Placeholder tab={tab} label={current.label} icon={current.icon} onLogout={onLogout} user={user} />
+            <Placeholder tab={tab} label={current.label} icon={current.icon} onLogout={onLogout} user={user} onUserChange={onUserChange} />
           )}
         </div>
 
@@ -87,12 +97,14 @@ function Placeholder({
   icon,
   onLogout,
   user,
+  onUserChange,
 }: {
   tab: AppTab;
   label: string;
   icon: string;
   onLogout: () => void;
   user: AuthUser;
+  onUserChange: (u: AuthUser) => void;
 }) {
   // 내 정보 탭은 큰 아이콘도 사용자 아바타(동물)로 표시.
   const bigIcon = tab === "profile" ? user.avatar ?? icon : icon;
@@ -112,14 +124,15 @@ function Placeholder({
     >
       <div style={{ fontSize: 40 }}>{bigIcon}</div>
       <div style={{ fontSize: 18, fontWeight: 900, color: T.text }}>{label}</div>
-      <div style={{ fontSize: 13, color: T.sub }}>준비 중입니다</div>
 
-      {tab === "profile" && (
-        <div style={{ marginTop: 28, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          <div style={{ fontSize: 13, color: T.sub }}>{user.username}</div>
+      {tab === "profile" ? (
+        <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%", maxWidth: 360 }}>
+          <NameEditor user={user} onUserChange={onUserChange} />
+          <AvatarEditor user={user} onUserChange={onUserChange} />
           <button
             onClick={onLogout}
             style={{
+              marginTop: 8,
               padding: "10px 22px",
               borderRadius: 12,
               border: `1px solid ${T.border}`,
@@ -134,7 +147,111 @@ function Placeholder({
             로그아웃
           </button>
         </div>
+      ) : (
+        <div style={{ fontSize: 13, color: T.sub }}>준비 중입니다</div>
       )}
+    </div>
+  );
+}
+
+// 내 정보 탭의 닉네임 변경. 입력 후 저장 시 서버에 반영하고 사용자 상태를 갱신한다.
+function NameEditor({ user, onUserChange }: { user: AuthUser; onUserChange: (u: AuthUser) => void }) {
+  const [name, setName] = useState(user.username);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const trimmed = name.trim();
+  const dirty = trimmed !== user.username;
+
+  const save = async () => {
+    if (!dirty || !trimmed || saving) return;
+    setError(null);
+    setDone(false);
+    setSaving(true);
+    const r = await auth.updateUsername(trimmed);
+    setSaving(false);
+    if (r.ok) {
+      onUserChange(r.data);
+      setName(r.data.username);
+      setDone(true);
+    } else {
+      setError(r.error);
+    }
+  };
+
+  return (
+    <div style={{ width: "100%" }}>
+      <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>닉네임</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input
+          value={name}
+          maxLength={30}
+          onChange={(e) => {
+            setName(e.target.value);
+            setError(null);
+            setDone(false);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && save()}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            boxSizing: "border-box",
+            background: T.card2,
+            border: `1px solid ${T.border}`,
+            borderRadius: 12,
+            color: T.text,
+            padding: "10px 12px",
+            fontSize: 14,
+            fontFamily: T.sans,
+          }}
+        />
+        <button
+          onClick={save}
+          disabled={!dirty || !trimmed || saving}
+          style={{
+            padding: "0 16px",
+            borderRadius: 12,
+            border: "none",
+            background: !dirty || !trimmed ? T.card2 : `linear-gradient(135deg,${T.accent},${T.purple})`,
+            color: !dirty || !trimmed ? T.sub : "#fff",
+            fontFamily: T.sans,
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: !dirty || !trimmed || saving ? "default" : "pointer",
+          }}
+        >
+          저장
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: error ? T.red : T.sub, minHeight: 14, marginTop: 6 }}>
+        {error ?? (saving ? "저장 중…" : done ? "변경되었습니다" : "")}
+      </div>
+    </div>
+  );
+}
+
+// 내 정보 탭의 이모지(아바타) 변경. 선택 즉시 서버에 저장하고 사용자 상태를 갱신한다.
+function AvatarEditor({ user, onUserChange }: { user: AuthUser; onUserChange: (u: AuthUser) => void }) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const change = async (a: string) => {
+    if (a === user.avatar || saving) return;
+    setError(null);
+    setSaving(true);
+    const r = await auth.updateAvatar(a);
+    setSaving(false);
+    if (r.ok) onUserChange(r.data);
+    else setError(r.error);
+  };
+
+  return (
+    <div style={{ width: "100%" }}>
+      <AvatarPicker value={user.avatar ?? ""} onChange={change} />
+      <div style={{ fontSize: 11, color: error ? T.red : T.sub, minHeight: 14 }}>
+        {error ?? (saving ? "저장 중…" : "이모지를 눌러 변경하세요")}
+      </div>
     </div>
   );
 }

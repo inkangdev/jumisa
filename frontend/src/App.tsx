@@ -5,6 +5,7 @@ import AppShell from "./layout/AppShell";
 import { T } from "./theme";
 import * as auth from "./api/auth";
 import type { AuthUser } from "./api/auth";
+import { onUnauthorized } from "./api/session";
 
 export default function App() {
   const [screen, setScreen] = useState<"login" | "signup">("login");
@@ -18,6 +19,15 @@ export default function App() {
     auth.me().then((u) => {
       setUser(u);
       setBooting(false);
+    });
+  }, []);
+
+  // 세션 만료(인증 필요한 API 가 401) → 사용자 비우고 로그인 화면으로.
+  useEffect(() => {
+    onUnauthorized(() => {
+      setUser(null);
+      setError("세션이 만료되었습니다. 다시 로그인해 주세요.");
+      setScreen("login");
     });
   }, []);
 
@@ -65,9 +75,11 @@ export default function App() {
     setScreen("login");
   };
 
+  const handleUserChange = (u: AuthUser) => setUser(u);
+
   // 로그인 완료 → 메인 셸(틀). 로그인/회원가입과 달리 셸이 자체 풀하이트 프레임을 가짐.
   if (!booting && user) {
-    return <AppShell user={user} onLogout={handleLogout} />;
+    return <AppShell user={user} onLogout={handleLogout} onUserChange={handleUserChange} />;
   }
 
   return (
