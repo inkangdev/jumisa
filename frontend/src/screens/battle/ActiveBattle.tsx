@@ -12,6 +12,31 @@ type Props = {
 
 type Tab = "rank" | "my" | "trade";
 
+function useCountUp(target: number, duration = 700) {
+  const [val, setVal] = useState(0);
+  const prevTarget = useRef(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const from = prevTarget.current;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setVal(from + (target - from) * eased);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+      else prevTarget.current = target;
+    };
+
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current !== null) cancelAnimationFrame(rafRef.current); };
+  }, [target, duration]);
+
+  return val;
+}
+
 const fmtP = (n: number) => {
   if (n >= 1e8) return (n / 1e8).toFixed(1) + "억";
   if (n >= 1e4) return Math.round(n / 1e4) + "만";
@@ -50,6 +75,7 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
   }, [roomId]);
 
   const myEntry = ranking.find((e) => e.username === user.username);
+  const myAnimatedRate = useCountUp(myEntry?.returnRate ?? 0);
 
   const daysLeft = endsAt
     ? Math.max(0, Math.ceil((new Date(endsAt).getTime() - Date.now()) / 86400000))
@@ -90,7 +116,7 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
               <div style={{ textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: T.sub }}>수익률</div>
                 <div style={{ fontSize: 20, fontWeight: 900, color: myEntry.returnRate >= 0 ? T.green : T.red, fontFamily: T.mono }}>
-                  {myEntry.returnRate >= 0 ? "+" : ""}{myEntry.returnRate.toFixed(2)}%
+                  {myAnimatedRate >= 0 ? "+" : ""}{myAnimatedRate.toFixed(2)}%
                 </div>
                 <div style={{ fontSize: 11, color: T.sub, fontFamily: T.mono }}>{fmtP(myEntry.totalAsset)}P</div>
               </div>
@@ -118,52 +144,120 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
   );
 }
 
-function RankTab({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
+function AnimatedRankRow({ p, i, myUsername }: { p: RankingEntry; i: number; myUsername: string }) {
+  const animatedRate = useCountUp(p.returnRate);
+  const isMe = p.username === myUsername;
+  const pos = p.returnRate >= 0;
+  const barWidth = Math.min(100, Math.max(2, (animatedRate + 5) / 20 * 100));
+
   return (
-    <div>
+    <div key={p.memberId} style={{ background: isMe ? `${T.accent}10` : T.card2, border: `1px solid ${isMe ? T.accent : T.border}`, borderRadius: 14, padding: "12px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ width: 32, textAlign: "center", fontSize: i < 3 ? 22 : 14, fontWeight: 900, color: i === 0 ? T.amber : i === 1 ? T.sub : i === 2 ? "#cd7f32" : T.mute }}>
+        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+      </div>
+      <div style={{ width: 36, height: 36, borderRadius: "50%", background: isMe ? `linear-gradient(135deg,${T.accent},${T.purple})` : T.card, border: `1px solid ${isMe ? T.accent : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+        {p.avatar ?? "🐂"}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, color: isMe ? T.accentL : T.text, fontSize: 14 }}>{p.username}{isMe && " (나)"}</div>
+        <div style={{ fontSize: 11, color: T.sub, fontFamily: T.mono }}>{fmtP(p.totalAsset)}P</div>
+        <div style={{ marginTop: 5, height: 4, borderRadius: 3, background: T.mute, overflow: "hidden" }}>
+          <div style={{ height: "100%", borderRadius: 3, background: pos ? T.green : T.red, width: `${barWidth}%` }} />
+        </div>
+      </div>
+      <div style={{ textAlign: "right", flexShrink: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 900, color: pos ? T.green : T.red, fontFamily: T.mono }}>
+          {animatedRate >= 0 ? "+" : ""}{animatedRate.toFixed(2)}%
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RaceTrack({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
+  const rates = ranking.map((r) => r.returnRate);
+  const min = Math.min(...rates);
+  const max = Math.max(...rates);
+  const spread = max - min;
+
+  // 전원 동률이면 중앙, 아니면 12%~88% 사이로 정규화
+  const toPos = (rate: number) =>
+    spread < 0.001 ? 50 : 12 + ((rate - min) / spread) * 76;
+
+  return (
+    <div style={{
+      background: T.card2, borderRadius: 16,
+      padding: "12px 12px 10px", marginBottom: 12,
+      border: `1px solid ${T.border}`,
+    }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: T.mute, marginBottom: 10, letterSpacing: 1.5 }}>
+        ⚡ LIVE RACE
+      </div>
       {ranking.map((p, i) => {
+        const pos = toPos(p.returnRate);
         const isMe = p.username === myUsername;
-        const pos = p.returnRate >= 0;
         return (
-          <div key={p.memberId} style={{ background: isMe ? `${T.accent}10` : T.card2, border: `1px solid ${isMe ? T.accent : T.border}`, borderRadius: 14, padding: "12px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 32, textAlign: "center", fontSize: i < 3 ? 22 : 14, fontWeight: 900, color: i === 0 ? T.amber : i === 1 ? T.sub : i === 2 ? "#cd7f32" : T.mute }}>
-              {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+          <div key={p.memberId} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: i < ranking.length - 1 ? 6 : 0 }}>
+            {/* 순위 */}
+            <div style={{
+              width: 18, fontSize: 11, fontWeight: 900, textAlign: "right", flexShrink: 0,
+              color: i === 0 ? T.amber : i === 1 ? "#aaa" : i === 2 ? "#cd7f32" : T.mute,
+            }}>
+              {i + 1}
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: isMe ? `linear-gradient(135deg,${T.accent},${T.purple})` : T.card, border: `1px solid ${isMe ? T.accent : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-              {p.avatar ?? "🐂"}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, color: isMe ? T.accentL : T.text, fontSize: 14 }}>{p.username}{isMe && " (나)"}</div>
-              <div style={{ fontSize: 11, color: T.sub, fontFamily: T.mono }}>{fmtP(p.totalAsset)}P</div>
-            </div>
-            <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 900, color: pos ? T.green : T.red, fontFamily: T.mono }}>
-                {pos ? "+" : ""}{p.returnRate.toFixed(2)}%
+
+            {/* 트랙 */}
+            <div style={{ flex: 1, height: 28, position: "relative" }}>
+              {/* 배경 + 진행 바 (overflow hidden으로 둥근 모서리 유지) */}
+              <div style={{ position: "absolute", inset: 0, background: `${T.mute}18`, borderRadius: 14, overflow: "hidden" }}>
+                <div style={{
+                  position: "absolute", left: 0, top: 0, bottom: 0,
+                  width: `${pos}%`,
+                  background: isMe
+                    ? `linear-gradient(90deg, transparent, ${T.accent}35)`
+                    : `linear-gradient(90deg, transparent, ${T.border})`,
+                  transition: "width 1.2s cubic-bezier(0.34,1.56,0.64,1)",
+                }} />
               </div>
+              {/* 아바타 (트랙 밖으로 넘쳐도 잘리지 않도록 별도 레이어) */}
+              <div style={{
+                position: "absolute",
+                left: `${pos}%`,
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+                transition: "left 1.2s cubic-bezier(0.34,1.56,0.64,1)",
+                fontSize: 18,
+                lineHeight: 1,
+                filter: isMe ? `drop-shadow(0 0 5px ${T.accent})` : undefined,
+                zIndex: 1,
+              }}>
+                {p.avatar ?? "🐂"}
+              </div>
+            </div>
+
+            {/* 닉네임 */}
+            <div style={{
+              width: 54, fontSize: 10,
+              color: isMe ? T.accentL : T.sub,
+              fontWeight: isMe ? 700 : 400,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0,
+            }}>
+              {p.username}
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
 
-      {/* 수익률 비교 바 */}
-      {ranking.length > 0 && (
-        <div style={{ background: T.card2, borderRadius: 14, padding: "14px 16px", marginTop: 4, border: `1px solid ${T.border}` }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.sub, marginBottom: 12 }}>수익률 비교</div>
-          {ranking.map((p) => (
-            <div key={p.memberId} style={{ marginBottom: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, fontSize: 11 }}>
-                <span style={{ color: p.username === ranking[0]?.username ? T.accentL : T.sub }}>{p.avatar ?? "🐂"} {p.username}</span>
-                <span style={{ color: p.returnRate >= 0 ? T.green : T.red, fontFamily: T.mono }}>
-                  {p.returnRate >= 0 ? "+" : ""}{p.returnRate.toFixed(1)}%
-                </span>
-              </div>
-              <div style={{ height: 6, borderRadius: 4, background: T.mute, overflow: "hidden" }}>
-                <div style={{ height: "100%", borderRadius: 4, background: p.returnRate >= 0 ? T.green : T.red, width: `${Math.min(100, Math.max(2, (p.returnRate + 5) / 20 * 100))}%`, transition: "width 0.5s" }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+function RankTab({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
+  return (
+    <div>
+      <RaceTrack ranking={ranking} myUsername={myUsername} />
+      {ranking.map((p, i) => (
+        <AnimatedRankRow key={p.memberId} p={p} i={i} myUsername={myUsername} />
+      ))}
     </div>
   );
 }
@@ -227,6 +321,7 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<"buy" | "sell" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   if (done) {
     return (
@@ -321,11 +416,35 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
     );
   }
 
+  const q = query.trim();
+  const filtered = stocks.filter((s) =>
+    !q || s.name.includes(q) || s.stockCode.includes(q)
+  );
+  // 보유 종목 상단 고정
+  const sorted = [...filtered].sort((a, b) => {
+    const aHeld = portfolio?.holdings.some((h) => h.stockCode === a.stockCode) ? 0 : 1;
+    const bHeld = portfolio?.holdings.some((h) => h.stockCode === b.stockCode) ? 0 : 1;
+    return aHeld - bHeld;
+  });
+
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.sub, marginBottom: 8 }}>
-        가용 현금 <span style={{ color: T.accentL, fontFamily: T.mono }}>{fmtP(portfolio?.cash ?? 0)}P</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.sub }}>
+          가용 현금 <span style={{ color: T.accentL, fontFamily: T.mono }}>{fmtP(portfolio?.cash ?? 0)}P</span>
+        </div>
       </div>
+
+      <input
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="종목명 또는 코드 검색"
+        style={{
+          width: "100%", boxSizing: "border-box", marginBottom: 10,
+          background: T.card2, border: `1px solid ${T.border}`, borderRadius: 10,
+          color: T.text, padding: "9px 12px", fontSize: 13, fontFamily: T.sans, outline: "none",
+        }}
+      />
 
       {stocks.length === 0 ? (
         <div style={{ background: T.card2, borderRadius: 14, padding: "28px 0", textAlign: "center", border: `1px solid ${T.border}` }}>
@@ -333,8 +452,13 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
           <div style={{ color: T.sub, fontSize: 13 }}>거래 가능한 종목이 없습니다</div>
           <div style={{ color: T.mute, fontSize: 11, marginTop: 4 }}>시세가 적재된 이후 표시됩니다</div>
         </div>
+      ) : sorted.length === 0 ? (
+        <div style={{ background: T.card2, borderRadius: 14, padding: "28px 0", textAlign: "center", border: `1px solid ${T.border}` }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>🔍</div>
+          <div style={{ color: T.sub, fontSize: 13 }}>"{q}"에 해당하는 종목이 없습니다</div>
+        </div>
       ) : (
-        stocks.map((s, i) => {
+        sorted.map((s, i) => {
           const holding = portfolio?.holdings.find((h) => h.stockCode === s.stockCode);
           return (
             <div key={s.stockCode}>
@@ -362,7 +486,7 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
                   )}
                 </div>
               </div>
-              {i < stocks.length - 1 && <div style={{ height: 1, background: T.border }} />}
+              {i < sorted.length - 1 && <div style={{ height: 1, background: T.border }} />}
             </div>
           );
         })
