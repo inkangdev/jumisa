@@ -10,7 +10,6 @@ import { NAV, type AppTab } from "./nav";
 import BattleTab from "../screens/battle/BattleTab";
 import AiAskModal from "../screens/ai/AiAskModal";
 import UndervalueScreen from "../screens/undervalue/UndervalueScreen";
-import { AvatarPicker } from "../screens/authUi";
 import WatchlistScreen from "../screens/watchlist/WatchlistScreen";
 
 export default function AppShell({
