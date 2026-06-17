@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { T } from "../../theme";
 import { fetchScreener, type ScreenerItem, type ScreenerParams, type ScreenerSort } from "../../api/screener";
+import { fetchWatchlist, toggleWatchlist } from "../../api/watchlist";
 
 // ─── 점수 색상 ────────────────────────────────────────────────────────────────
 function scoreColor(s: number | null) {
@@ -55,6 +56,7 @@ export default function UndervalueScreen() {
   const [sectors, setSectors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
+  const [watched, setWatched] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,6 +74,23 @@ export default function UndervalueScreen() {
   }, [sort, perMax, pbrMax, sector]);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    fetchWatchlist().then((r) => {
+      if (r.ok) setWatched(new Set(r.data.items.map((i) => i.stockCode)));
+    });
+  }, []);
+
+  const handleToggle = async (stockCode: string, isWatched: boolean) => {
+    const ok = await toggleWatchlist(stockCode, isWatched);
+    if (ok) {
+      setWatched((prev) => {
+        const next = new Set(prev);
+        isWatched ? next.delete(stockCode) : next.add(stockCode);
+        return next;
+      });
+    }
+  };
 
   // 종목명·코드 즉시 검색 (클라이언트 필터)
   const q = query.trim().toLowerCase();
@@ -161,7 +180,14 @@ export default function UndervalueScreen() {
         ) : visible.length === 0 ? (
           <Empty icon="🔍" msg={`'${query.trim()}' 검색 결과가 없습니다`} />
         ) : (
-          visible.map((item) => <StockCard key={item.stockCode} item={item} />)
+          visible.map((item) => (
+            <StockCard
+              key={item.stockCode}
+              item={item}
+              isWatched={watched.has(item.stockCode)}
+              onToggle={handleToggle}
+            />
+          ))
         )}
       </div>
     </div>
@@ -280,7 +306,11 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 // ─── 종목 카드 ────────────────────────────────────────────────────────────────
-function StockCard({ item }: { item: ScreenerItem }) {
+function StockCard({ item, isWatched, onToggle }: {
+  item: ScreenerItem;
+  isWatched: boolean;
+  onToggle: (code: string, currently: boolean) => void;
+}) {
   const score = item.totalScore != null ? Math.round(item.totalScore) : null;
   const rate  = fmtRate(item.changeRate);
 
@@ -324,14 +354,16 @@ function StockCard({ item }: { item: ScreenerItem }) {
         <div style={{ fontSize: 13, color: rate.color }}>{rate.text}</div>
       </div>
 
-      {/* 관심종목 ☆ (추후 연동) */}
-      <button style={{
-        width: 30, height: 30, flexShrink: 0,
-        background: "transparent", border: "none",
-        fontSize: 18, color: T.mute, cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 0,
-      }}>☆</button>
+      <button
+        onClick={() => onToggle(item.stockCode, isWatched)}
+        style={{
+          width: 30, height: 30, flexShrink: 0,
+          background: "transparent", border: "none",
+          fontSize: 18, color: isWatched ? T.accent : T.mute, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 0,
+        }}
+      >{isWatched ? "★" : "☆"}</button>
     </div>
   );
 }

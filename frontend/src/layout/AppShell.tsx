@@ -11,6 +11,7 @@ import BattleTab from "../screens/battle/BattleTab";
 import AiAskModal from "../screens/ai/AiAskModal";
 import UndervalueScreen from "../screens/undervalue/UndervalueScreen";
 import { AvatarPicker } from "../screens/authUi";
+import WatchlistScreen from "../screens/watchlist/WatchlistScreen";
 
 export default function AppShell({
   user,
@@ -77,6 +78,8 @@ export default function AppShell({
             <UndervalueScreen />
           ) : tab === "battle" ? (
             <BattleTab user={user} />
+          ) : tab === "watchlist" ? (
+            <WatchlistScreen />
           ) : (
             <Placeholder tab={tab} label={current.label} icon={current.icon} onLogout={onLogout} user={user} onUserChange={onUserChange} />
           )}
