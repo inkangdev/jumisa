@@ -10,8 +10,24 @@ type Props = {
 };
 
 const PERIODS = ["3", "7", "14", "30"];
-const START_POINTS: [string, number][] = [["50만", 500_000], ["100만", 1_000_000], ["300만", 3_000_000]];
+const POINT_PRESETS: [string, number][] = [
+  ["100만", 1_000_000], ["300만", 3_000_000], ["500만", 5_000_000],
+  ["1000만", 10_000_000], ["3000만", 30_000_000], ["5000만", 50_000_000],
+  ["1억", 100_000_000], ["1억5천", 150_000_000],
+];
+const POINT_MIN = 1_000_000;
+const POINT_MAX = 150_000_000;
+const POINT_STEP = 1_000_000;
 const MARKETS: [string, string][] = [["kr", "🇰🇷 국내만"], ["both", "국내+미국"], ["us", "🇺🇸 미국만"]];
+
+const fmtPoint = (n: number) => {
+  if (n >= 100_000_000) {
+    const uk = Math.floor(n / 100_000_000);
+    const rem = n % 100_000_000;
+    return rem === 0 ? `${uk}억` : `${uk}억 ${Math.floor(rem / 10_000_000)}천만`;
+  }
+  return `${Math.floor(n / 10_000)}만`;
+};
 
 export default function CreateRoom({ onBack, onCreated }: Props) {
   const [name, setName] = useState("");
@@ -66,10 +82,29 @@ export default function CreateRoom({ onBack, onCreated }: Props) {
 
         <div style={fieldStyle}>
           <span style={labelStyle}>시작 포인트 (참가자 전원 동일 지급)</span>
-          <div style={{ display: "flex", gap: 8 }}>
-            {START_POINTS.map(([label, val]) => (
-              <button key={val} onClick={() => setStartPoints(val)} style={{ flex: 1, padding: "10px 4px", borderRadius: 12, border: `1px solid ${startPoints === val ? T.amber : T.border}`, background: startPoints === val ? T.amberBg : "transparent", color: startPoints === val ? T.amber : T.sub, fontFamily: T.mono, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
-                {label}P
+          {/* 현재 값 표시 */}
+          <div style={{ textAlign: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: 26, fontWeight: 900, color: T.amber, fontFamily: T.mono }}>{fmtPoint(startPoints)}</span>
+            <span style={{ fontSize: 13, color: T.sub, marginLeft: 4 }}>P</span>
+          </div>
+          {/* 슬라이더 */}
+          <input
+            type="range"
+            min={POINT_MIN}
+            max={POINT_MAX}
+            step={POINT_STEP}
+            value={startPoints}
+            onChange={(e) => setStartPoints(Number(e.target.value))}
+            style={{ width: "100%", accentColor: T.amber, cursor: "pointer", marginBottom: 12 }}
+          />
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.mute, marginBottom: 12, marginTop: -8 }}>
+            <span>100만</span><span>1억5천만</span>
+          </div>
+          {/* 빠른 프리셋 */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {POINT_PRESETS.map(([label, val]) => (
+              <button key={val} onClick={() => setStartPoints(val)} style={{ padding: "6px 10px", borderRadius: 10, border: `1px solid ${startPoints === val ? T.amber : T.border}`, background: startPoints === val ? T.amberBg : "transparent", color: startPoints === val ? T.amber : T.sub, fontFamily: T.mono, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                {label}
               </button>
             ))}
           </div>
@@ -101,7 +136,7 @@ export default function CreateRoom({ onBack, onCreated }: Props) {
           <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>방 미리보기</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {[
-              [T.amber, `${(startPoints / 10000).toFixed(0)}만P 지급`],
+              [T.amber, `${fmtPoint(startPoints)}P 지급`],
               [T.accent, `${period}일 대결`],
               [T.purple, `최대 ${maxPlayers}명`],
             ].map(([color, text]) => (
