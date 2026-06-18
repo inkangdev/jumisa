@@ -237,11 +237,11 @@ create index if not exists idx_battle_trade_participant on battle_trade (partici
 -- 8) 관심종목 (watchlist)
 -- ─────────────────────────────────────────────
 create table if not exists watchlist (
-    member_id  bigint     not null references member(id) on delete cascade,
+                                         member_id  bigint     not null references member(id) on delete cascade,
     stock_code varchar(6) not null references stock(stock_code) on delete cascade,
     created_at timestamptz not null default now(),
     primary key (member_id, stock_code)
-);
+    );
 
 comment on table watchlist is '회원별 관심종목. (member_id, stock_code) 복합 PK — 중복 불가.';
 
