@@ -232,3 +232,17 @@ create table if not exists watchlist (
 );
 
 comment on table watchlist is '회원별 관심종목. (member_id, stock_code) 복합 PK — 중복 불가.';
+
+-- ─────────────────────────────────────────────
+-- 9) 소셜 계정 연동 (카카오 등)
+-- ─────────────────────────────────────────────
+create table if not exists social_account (
+    id          bigint generated always as identity primary key,
+    member_id   bigint      not null references member(id) on delete cascade,
+    provider    varchar(20)  not null,   -- 'kakao', 'naver', 'google' 등
+    provider_id varchar(100) not null,   -- 각 provider 의 사용자 ID
+    created_at  timestamptz  not null default now(),
+    unique (provider, provider_id)
+);
+
+comment on table social_account is '소셜 로그인 연동 (카카오 등). provider+provider_id 유니크.';
