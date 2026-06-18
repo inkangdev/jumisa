@@ -1,0 +1,37 @@
+# jumisa 로컬 개발용 — DB만 도커로. 앱(backend/batch/ai)은 IntelliJ에서 host 실행.
+#
+#   목적: 로컬에서 기동할 때 로컬 Postgres(localhost:5432)를 바라보게 한다.
+#         운영 스택(docker-compose.yml)과 분리 — 'name: jumisa-local' + 'pgdata_local' 볼륨.
+#
+#   기동:  docker compose -f docker-compose.local.yml up -d
+#   상태:  docker compose -f docker-compose.local.yml ps
+#   접속:  jdbc:postgresql://localhost:5432/jumisa   (.env 의 DB_URL — host 실행 시 사용)
+#   중지:  docker compose -f docker-compose.local.yml down      (데이터 보존)
+#          '-v' 금지 — pgdata_local 볼륨(로컬 DB 전체)이 삭제됨.
+#
+# 스키마: initdb 마운트 없음. backend 를 IntelliJ 로 기동하면 Flyway 가 V1__init.sql 을 실행해 생성한다.
+# 기동 순서: (1) 이 compose 로 db → (2) backend bootRun(Flyway 마이그레이션) → (3) batch bootRun.
+
+name: jumisa-local
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: jumisa-db-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jumisa}
+      POSTGRES_USER: ${POSTGRES_USER:-jumisa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jumisa}
+    ports:
+      - "5432:5432"            # 호스트 노출 — IntelliJ/배치가 localhost:5432 로 접속
+    volumes:
+      - pgdata_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jumisa} -d ${POSTGRES_DB:-jumisa}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata_local:

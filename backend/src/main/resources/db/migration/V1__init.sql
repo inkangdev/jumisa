@@ -1,13 +1,11 @@
 -- ============================================================
--- Jumisa 스키마 v2
--- 데이터 소스: KIS 공개 마스터 파일(종목/거래상태/연간재무) + KIS Open API(시세/가치지표)
--- 변경 주기/보관 정책으로 테이블 분리:
---   stock              마스터(불변+거래상태)        ← 마스터 파일, 1일 1회
---   stock_financials   재무(연간/분기)              ← 마스터 파일 + 재무비율 API
---   stock_price_snapshot 인트라데이 시세(1시간)      ← inquire-price, 7일 보관
---   stock_daily        일봉(종가+가치지표)          ← inquire-price 마감 1회, 장기 보관
---   undervalue_score   저평가 점수/랭킹(스키마만)    ← 가중치 확정 후 적재
--- 적용: Supabase(public 스키마). 신규 생성 시 본 파일 전체 실행.
+-- V1 __init — Jumisa 초기 스키마 (앱 + Spring Batch 메타)
+-- 출처: backend/db/schema.sql + deploy/db-init/02-batch.sql 를 단일 베이스라인으로 통합.
+-- 적용:
+--   · 신규 DB(빈 볼륨)        → 본 V1 전체 실행으로 스키마 생성.
+--   · 기존 DB(데이터 존재)    → application.yml 의 baseline-on-migrate=true 로
+--                               V1 을 "적용됨"으로 마킹하고 스킵(재실행 안 함).
+-- 이후 스키마 변경은 V2__*.sql, V3__*.sql … 로 추가한다.
 -- ============================================================
 
 -- ─────────────────────────────────────────────
@@ -165,6 +163,20 @@ create table if not exists member (
 comment on table member is '회원 (Spring Security 세션 인증). password 는 BCrypt 해시.';
 
 -- ─────────────────────────────────────────────
+-- 6-1) 소셜 로그인 계정 매핑 (member 1:N) — 카카오 등
+-- ─────────────────────────────────────────────
+create table if not exists social_account (
+    id          bigint generated always as identity primary key,
+    member_id   bigint not null references member(id) on delete cascade,
+    provider    varchar(20)  not null,   -- 'kakao', 'naver', 'google' 등
+    provider_id varchar(100) not null,   -- 각 provider 의 사용자 ID
+    created_at  timestamptz  not null default now(),
+    unique (provider, provider_id)
+);
+
+comment on table social_account is '소셜 로그인 계정 매핑 (member 1:N). (provider, provider_id) 유니크.';
+
+-- ─────────────────────────────────────────────
 -- 7) 모의투자 대결 (Phase 1: 국내 종목만)
 -- ─────────────────────────────────────────────
 create table if not exists battle_room (
@@ -233,16 +245,84 @@ create table if not exists watchlist (
 
 comment on table watchlist is '회원별 관심종목. (member_id, stock_code) 복합 PK — 중복 불가.';
 
--- ─────────────────────────────────────────────
--- 9) 소셜 계정 연동 (카카오 등)
--- ─────────────────────────────────────────────
-create table if not exists social_account (
-                                              id          bigint generated always as identity primary key,
-                                              member_id   bigint      not null references member(id) on delete cascade,
-    provider    varchar(20)  not null,   -- 'kakao', 'naver', 'google' 등
-    provider_id varchar(100) not null,   -- 각 provider 의 사용자 ID
-    created_at  timestamptz  not null default now(),
-    unique (provider, provider_id)
-    );
+-- ============================================================
+-- 9) Spring Batch 5.2.x 메타테이블 (PostgreSQL)
+--    출처: org/springframework/batch/core/schema-postgresql.sql (spring-batch-core-5.2.2)
+--    batch 앱은 initialize-schema=never 이므로 본 마이그레이션에서 생성한다.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS BATCH_JOB_INSTANCE  (
+	JOB_INSTANCE_ID BIGINT  NOT NULL PRIMARY KEY ,
+	VERSION BIGINT ,
+	JOB_NAME VARCHAR(100) NOT NULL,
+	JOB_KEY VARCHAR(32) NOT NULL,
+	constraint JOB_INST_UN unique (JOB_NAME, JOB_KEY)
+) ;
 
-comment on table social_account is '소셜 로그인 연동 (카카오 등). provider+provider_id 유니크.';
+CREATE TABLE IF NOT EXISTS BATCH_JOB_EXECUTION  (
+	JOB_EXECUTION_ID BIGINT  NOT NULL PRIMARY KEY ,
+	VERSION BIGINT  ,
+	JOB_INSTANCE_ID BIGINT NOT NULL,
+	CREATE_TIME TIMESTAMP NOT NULL,
+	START_TIME TIMESTAMP DEFAULT NULL ,
+	END_TIME TIMESTAMP DEFAULT NULL ,
+	STATUS VARCHAR(10) ,
+	EXIT_CODE VARCHAR(2500) ,
+	EXIT_MESSAGE VARCHAR(2500) ,
+	LAST_UPDATED TIMESTAMP,
+	constraint JOB_INST_EXEC_FK foreign key (JOB_INSTANCE_ID)
+	references BATCH_JOB_INSTANCE(JOB_INSTANCE_ID)
+) ;
+
+CREATE TABLE IF NOT EXISTS BATCH_JOB_EXECUTION_PARAMS  (
+	JOB_EXECUTION_ID BIGINT NOT NULL ,
+	PARAMETER_NAME VARCHAR(100) NOT NULL ,
+	PARAMETER_TYPE VARCHAR(100) NOT NULL ,
+	PARAMETER_VALUE VARCHAR(2500) ,
+	IDENTIFYING CHAR(1) NOT NULL ,
+	constraint JOB_EXEC_PARAMS_FK foreign key (JOB_EXECUTION_ID)
+	references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ;
+
+CREATE TABLE IF NOT EXISTS BATCH_STEP_EXECUTION  (
+	STEP_EXECUTION_ID BIGINT  NOT NULL PRIMARY KEY ,
+	VERSION BIGINT NOT NULL,
+	STEP_NAME VARCHAR(100) NOT NULL,
+	JOB_EXECUTION_ID BIGINT NOT NULL,
+	CREATE_TIME TIMESTAMP NOT NULL,
+	START_TIME TIMESTAMP DEFAULT NULL ,
+	END_TIME TIMESTAMP DEFAULT NULL ,
+	STATUS VARCHAR(10) ,
+	COMMIT_COUNT BIGINT ,
+	READ_COUNT BIGINT ,
+	FILTER_COUNT BIGINT ,
+	WRITE_COUNT BIGINT ,
+	READ_SKIP_COUNT BIGINT ,
+	WRITE_SKIP_COUNT BIGINT ,
+	PROCESS_SKIP_COUNT BIGINT ,
+	ROLLBACK_COUNT BIGINT ,
+	EXIT_CODE VARCHAR(2500) ,
+	EXIT_MESSAGE VARCHAR(2500) ,
+	LAST_UPDATED TIMESTAMP,
+	constraint JOB_EXEC_STEP_FK foreign key (JOB_EXECUTION_ID)
+	references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ;
+
+CREATE TABLE IF NOT EXISTS BATCH_STEP_EXECUTION_CONTEXT  (
+	STEP_EXECUTION_ID BIGINT NOT NULL PRIMARY KEY,
+	SHORT_CONTEXT VARCHAR(2500) NOT NULL,
+	SERIALIZED_CONTEXT TEXT ,
+	constraint STEP_EXEC_CTX_FK foreign key (STEP_EXECUTION_ID)
+	references BATCH_STEP_EXECUTION(STEP_EXECUTION_ID)
+) ;
+
+CREATE TABLE IF NOT EXISTS BATCH_JOB_EXECUTION_CONTEXT  (
+	JOB_EXECUTION_ID BIGINT NOT NULL PRIMARY KEY,
+	SHORT_CONTEXT VARCHAR(2500) NOT NULL,
+	SERIALIZED_CONTEXT TEXT ,
+	constraint JOB_EXEC_CTX_FK foreign key (JOB_EXECUTION_ID)
+	references BATCH_JOB_EXECUTION(JOB_EXECUTION_ID)
+) ;
+
+CREATE SEQUENCE IF NOT EXISTS BATCH_STEP_EXECUTION_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
+CREATE SEQUENCE IF NOT EXISTS BATCH_JOB_EXECUTION_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
+CREATE SEQUENCE IF NOT EXISTS BATCH_JOB_SEQ MAXVALUE 9223372036854775807 NO CYCLE;
