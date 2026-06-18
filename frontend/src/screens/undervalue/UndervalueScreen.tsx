@@ -121,7 +121,7 @@ export default function UndervalueScreen() {
             width: "100%", boxSizing: "border-box",
             padding: "9px 34px 9px 36px", borderRadius: 10,
             border: `1px solid ${T.border}`, background: T.card,
-            color: T.text, fontFamily: T.sans, fontSize: 14, outline: "none",
+            color: T.text, fontFamily: T.sans, fontSize: 16, outline: "none",
           }}
         />
         {query && (

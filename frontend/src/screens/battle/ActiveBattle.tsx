@@ -442,7 +442,7 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
         style={{
           width: "100%", boxSizing: "border-box", marginBottom: 10,
           background: T.card2, border: `1px solid ${T.border}`, borderRadius: 10,
-          color: T.text, padding: "9px 12px", fontSize: 13, fontFamily: T.sans, outline: "none",
+          color: T.text, padding: "9px 12px", fontSize: 16, fontFamily: T.sans, outline: "none",
         }}
       />
 

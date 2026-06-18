@@ -44,7 +44,7 @@ export function Field({
           borderRadius: 12,
           color: T.text,
           padding: "12px 14px",
-          fontSize: 14,
+          fontSize: 16,
           fontFamily: T.sans,
         }}
       />

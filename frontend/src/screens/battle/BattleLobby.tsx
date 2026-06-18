@@ -74,7 +74,7 @@ export default function BattleLobby({ onNavigate }: Props) {
             onKeyDown={(e) => e.key === "Enter" && handleJoinByCode()}
             placeholder="초대코드 입력 (예: AB12CD)"
             maxLength={6}
-            style={{ flex: 1, background: T.card2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, padding: "10px 12px", fontSize: 13, fontFamily: T.mono, letterSpacing: 2, outline: "none" }}
+            style={{ flex: 1, background: T.card2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.text, padding: "10px 12px", fontSize: 16, fontFamily: T.mono, letterSpacing: 2, outline: "none" }}
           />
           <button
             onClick={handleJoinByCode}
