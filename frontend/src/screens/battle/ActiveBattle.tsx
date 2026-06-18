@@ -335,6 +335,14 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
   if (selected) {
     const totalCost = selected.currentPrice * qty;
     const holding = portfolio?.holdings.find((h) => h.stockCode === selected.stockCode);
+    const maxBuyQty = portfolio ? Math.floor(portfolio.cash / selected.currentPrice) : 0;
+    const maxSellQty = holding?.qty ?? 0;
+    const maxQty = type === "buy" ? maxBuyQty : maxSellQty;
+
+    const setPct = (pct: number) => {
+      const v = Math.max(1, Math.floor(maxQty * pct));
+      setQty(v);
+    };
 
     const execute = async () => {
       setSubmitting(true);
@@ -377,10 +385,30 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
 
         <div style={{ background: T.card2, borderRadius: 14, padding: 14, marginBottom: 12, border: `1px solid ${T.border}` }}>
           <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>수량</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 12 }}>
-            <button onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer" }}>−</button>
-            <div style={{ flex: 1, textAlign: "center", fontSize: 24, fontWeight: 900, color: T.text, fontFamily: T.mono }}>{qty}</div>
-            <button onClick={() => setQty((q) => q + 1)} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer" }}>+</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 10 }}>
+            <button onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer", flexShrink: 0 }}>−</button>
+            <input
+              type="number"
+              min={1}
+              value={qty}
+              onChange={(e) => {
+                const v = parseInt(e.target.value);
+                if (!isNaN(v) && v >= 1) setQty(v);
+              }}
+              style={{ flex: 1, textAlign: "center", fontSize: 24, fontWeight: 900, color: T.text, fontFamily: T.mono, background: "transparent", border: "none", outline: "none", width: 0 }}
+            />
+            <button onClick={() => setQty((q) => q + 1)} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer", flexShrink: 0 }}>+</button>
+          </div>
+          {/* 비율 버튼 */}
+          <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+            {([["25%", 0.25], ["50%", 0.5], ["75%", 0.75]] as [string, number][]).map(([label, pct]) => (
+              <button key={label} onClick={() => setPct(pct)} style={{ flex: 1, padding: "6px 0", borderRadius: 9, border: `1px solid ${T.border}`, background: "transparent", color: T.sub, fontFamily: T.sans, fontWeight: 600, fontSize: 12, cursor: "pointer" }}>
+                {label}
+              </button>
+            ))}
+            <button onClick={() => setPct(1)} style={{ flex: 1, padding: "6px 0", borderRadius: 9, border: `1px solid ${type === "buy" ? T.green : T.red}`, background: type === "buy" ? T.greenBg : T.redBg, color: type === "buy" ? T.green : T.red, fontFamily: T.sans, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              {type === "buy" ? "최대" : "전량"}
+            </button>
           </div>
           <div style={{ height: 1, background: T.border, margin: "0 -14px" }} />
           <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", fontSize: 13 }}>
@@ -389,7 +417,7 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 4 }}>
             <span style={{ color: T.mute }}>가용 현금</span>
-            <span style={{ color: T.sub, fontFamily: T.mono }}>{fmtP(portfolio?.cash ?? 0)}P</span>
+            <span style={{ color: T.sub, fontFamily: T.mono }}>{fmtP(portfolio?.cash ?? 0)}P <span style={{ color: T.mute }}>(최대 {maxBuyQty}주)</span></span>
           </div>
           {holding && (
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 4 }}>
