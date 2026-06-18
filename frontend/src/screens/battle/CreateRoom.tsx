@@ -65,7 +65,7 @@ export default function CreateRoom({ onBack, onCreated }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="예: 저평가 고수들의 방"
-            style={{ width: "100%", boxSizing: "border-box", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, color: T.text, padding: "12px 14px", fontSize: 14, fontFamily: T.sans, outline: "none" }}
+            style={{ width: "100%", boxSizing: "border-box", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, color: T.text, padding: "12px 14px", fontSize: 16, fontFamily: T.sans, outline: "none" }}
           />
         </div>
 

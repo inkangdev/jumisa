@@ -171,78 +171,132 @@ function AnimatedRankRow({ p, i, myUsername }: { p: RankingEntry; i: number; myU
 }
 
 function RaceTrack({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
-  const rates = ranking.map((r) => r.returnRate);
-  const min = Math.min(...rates);
-  const max = Math.max(...rates);
+  const ROW_H = 38;
+  const GAP = 8;
+  const SLOT = ROW_H + GAP;
+
+  // 5분 배치 간격 동안 "살아있는" 레이스를 연출하기 위한 노이즈 랜덤 워크.
+  // 정렬·바 너비는 (실제수익률 + 노이즈) 기준 → 근접 경쟁자끼리 순위가 뒤집히며 행 교차.
+  // 표시 숫자는 항상 실제 수익률 사용.
+  const [noise, setNoise] = useState<Record<number, number>>({});
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setNoise((prev) => {
+        const next: Record<number, number> = {};
+        for (const p of ranking) {
+          const cur = prev[p.memberId] ?? 0;
+          // 이전 값에서 ±0.25% 씩 랜덤 워크, 최대 ±1% 제한
+          const delta = (Math.random() - 0.5) * 0.5;
+          next[p.memberId] = Math.max(-1, Math.min(1, cur + delta));
+        }
+        return next;
+      });
+    }, 1200);
+    return () => clearInterval(id);
+  }, [ranking]);
+
+  const effective = (p: RankingEntry) => p.returnRate + (noise[p.memberId] ?? 0);
+
+  const sorted = [...ranking].sort((a, b) => effective(b) - effective(a));
+
+  const effRates = sorted.map((p) => effective(p));
+  const min = Math.min(...effRates);
+  const max = Math.max(...effRates);
   const spread = max - min;
 
-  // 전원 동률이면 중앙, 아니면 12%~88% 사이로 정규화
-  const toPos = (rate: number) =>
-    spread < 0.001 ? 50 : 12 + ((rate - min) / spread) * 76;
+  const toBar = (p: RankingEntry) =>
+    spread < 0.001 ? 50 : 10 + ((effective(p) - min) / spread) * 80;
 
   return (
     <div style={{
       background: T.card2, borderRadius: 16,
-      padding: "12px 12px 10px", marginBottom: 12,
+      padding: "12px 12px 12px", marginBottom: 12,
       border: `1px solid ${T.border}`,
     }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: T.mute, marginBottom: 10, letterSpacing: 1.5 }}>
+      <div style={{ fontSize: 10, fontWeight: 700, color: T.mute, marginBottom: 12, letterSpacing: 1.5 }}>
         ⚡ LIVE RACE
       </div>
-      {ranking.map((p, i) => {
-        const pos = toPos(p.returnRate);
-        const isMe = p.username === myUsername;
-        return (
-          <div key={p.memberId} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: i < ranking.length - 1 ? 6 : 0 }}>
-            {/* 순위 */}
-            <div style={{
-              width: 18, fontSize: 11, fontWeight: 900, textAlign: "right", flexShrink: 0,
-              color: i === 0 ? T.amber : i === 1 ? "#aaa" : i === 2 ? "#cd7f32" : T.mute,
-            }}>
-              {i + 1}
-            </div>
+      <div style={{ position: "relative", height: sorted.length * SLOT - GAP }}>
+        {sorted.map((p, i) => {
+          const isMe = p.username === myUsername;
+          const barPct = toBar(p);
+          const rankColor = i === 0 ? T.amber : i === 1 ? "#aaa" : i === 2 ? "#cd7f32" : T.sub;
 
-            {/* 트랙 */}
-            <div style={{ flex: 1, height: 28, position: "relative" }}>
-              {/* 배경 + 진행 바 (overflow hidden으로 둥근 모서리 유지) */}
-              <div style={{ position: "absolute", inset: 0, background: `${T.mute}18`, borderRadius: 14, overflow: "hidden" }}>
-                <div style={{
-                  position: "absolute", left: 0, top: 0, bottom: 0,
-                  width: `${pos}%`,
-                  background: isMe
-                    ? `linear-gradient(90deg, transparent, ${T.accent}35)`
-                    : `linear-gradient(90deg, transparent, ${T.border})`,
-                  transition: "width 1.2s cubic-bezier(0.34,1.56,0.64,1)",
-                }} />
-              </div>
-              {/* 아바타 (트랙 밖으로 넘쳐도 잘리지 않도록 별도 레이어) */}
-              <div style={{
+          return (
+            <div
+              key={p.memberId}
+              style={{
                 position: "absolute",
-                left: `${pos}%`,
-                top: "50%",
-                transform: "translate(-50%, -50%)",
-                transition: "left 1.2s cubic-bezier(0.34,1.56,0.64,1)",
-                fontSize: 18,
-                lineHeight: 1,
+                top: i * SLOT,
+                left: 0,
+                right: 0,
+                height: ROW_H,
+                transition: "top 1.0s cubic-bezier(0.34,1.56,0.64,1)",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {/* 순위 */}
+              <div style={{
+                width: 16, fontSize: 11, fontWeight: 900,
+                color: rankColor, textAlign: "center", flexShrink: 0,
+              }}>
+                {i + 1}
+              </div>
+
+              {/* 아바타 */}
+              <div style={{
+                fontSize: 17, lineHeight: 1, flexShrink: 0,
                 filter: isMe ? `drop-shadow(0 0 5px ${T.accent})` : undefined,
-                zIndex: 1,
               }}>
                 {p.avatar ?? "🐂"}
               </div>
-            </div>
 
-            {/* 닉네임 */}
-            <div style={{
-              width: 54, fontSize: 10,
-              color: isMe ? T.accentL : T.sub,
-              fontWeight: isMe ? 700 : 400,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 0,
-            }}>
-              {p.username}
+              {/* 바 + 닉네임 */}
+              <div style={{ flex: 1, height: "100%", position: "relative" }}>
+                <div style={{
+                  position: "absolute", inset: 0,
+                  background: `${T.mute}28`, borderRadius: 8, overflow: "hidden",
+                }}>
+                  <div style={{
+                    position: "absolute", left: 0, top: 0, bottom: 0,
+                    width: `${barPct}%`,
+                    background: isMe
+                      ? `linear-gradient(90deg, ${T.accent}50, ${T.accent}90)`
+                      : p.returnRate >= 0
+                        ? `linear-gradient(90deg, ${T.green}30, ${T.green}60)`
+                        : `linear-gradient(90deg, ${T.red}30, ${T.red}60)`,
+                    transition: "width 1.0s cubic-bezier(0.34,1.56,0.64,1)",
+                  }} />
+                </div>
+                <div style={{
+                  position: "absolute", left: 8, top: "50%",
+                  transform: "translateY(-50%)",
+                  fontSize: 11, fontWeight: isMe ? 700 : 500,
+                  color: isMe ? T.accentL : T.sub,
+                  whiteSpace: "nowrap", overflow: "hidden",
+                  textOverflow: "ellipsis", maxWidth: "65%",
+                  zIndex: 1,
+                }}>
+                  {p.username}
+                </div>
+              </div>
+
+              {/* 수익률 — 실제 데이터만 표시 */}
+              <div style={{
+                width: 56, fontSize: 11, fontWeight: 700,
+                textAlign: "right", flexShrink: 0,
+                color: p.returnRate > 0 ? T.green : p.returnRate < 0 ? T.red : T.sub,
+                fontFamily: T.mono,
+              }}>
+                {p.returnRate > 0 ? "+" : ""}{p.returnRate.toFixed(2)}%
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -466,7 +520,7 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
         style={{
           width: "100%", boxSizing: "border-box", marginBottom: 10,
           background: T.card2, border: `1px solid ${T.border}`, borderRadius: 10,
-          color: T.text, padding: "9px 12px", fontSize: 13, fontFamily: T.sans, outline: "none",
+          color: T.text, padding: "9px 12px", fontSize: 16, fontFamily: T.sans, outline: "none",
         }}
       />
 
