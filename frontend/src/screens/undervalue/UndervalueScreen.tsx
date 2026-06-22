@@ -305,14 +305,61 @@ function Label({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 12, color: T.sub, marginBottom: 8 }}>{children}</div>;
 }
 
+// ─── 종목 로고 ────────────────────────────────────────────────────────────────
+function StockLogo({ code, score }: { code: string; score: number | null }) {
+  const [failed, setFailed] = useState(false);
+  const color = scoreColor(score);
+  const rounded = score != null ? Math.round(score) : null;
+
+  if (failed) {
+    return (
+      <div style={{
+        width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
+        background: scoreBg(score),
+        border: `2px solid ${color}`,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 900, color, lineHeight: 1 }}>{rounded ?? "-"}</div>
+        {rounded != null && <div style={{ fontSize: 9, color, opacity: 0.75 }}>점</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative", flexShrink: 0, width: 48, height: 48 }}>
+      <img
+        src={`https://file.alphasquare.co.kr/media/images/stock_logo/kr/${code}.png`}
+        alt={code}
+        onError={() => setFailed(true)}
+        style={{
+          width: 48, height: 48, borderRadius: "50%",
+          objectFit: "cover",
+          border: `1.5px solid ${T.border}`,
+          background: T.card2,
+        }}
+      />
+      <div style={{
+        position: "absolute", bottom: -2, right: -2,
+        minWidth: 18, height: 18, borderRadius: 9, padding: "0 3px",
+        background: color,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 8, fontWeight: 900, color: "#fff", fontFamily: T.mono,
+        border: `1.5px solid ${T.bg}`,
+        boxSizing: "border-box",
+      }}>
+        {rounded ?? "-"}
+      </div>
+    </div>
+  );
+}
+
 // ─── 종목 카드 ────────────────────────────────────────────────────────────────
 function StockCard({ item, isWatched, onToggle }: {
   item: ScreenerItem;
   isWatched: boolean;
   onToggle: (code: string, currently: boolean) => void;
 }) {
-  const score = item.totalScore != null ? Math.round(item.totalScore) : null;
-  const rate  = fmtRate(item.changeRate);
+  const rate = fmtRate(item.changeRate);
 
   return (
     <div style={{
@@ -320,20 +367,7 @@ function StockCard({ item, isWatched, onToggle }: {
       padding: "13px 16px",
       borderBottom: `1px solid ${T.border}`,
     }}>
-      {/* 점수 배지 */}
-      <div style={{
-        width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
-        background: scoreBg(score),
-        border: `2px solid ${scoreColor(score)}`,
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      }}>
-        <div style={{ fontSize: 15, fontWeight: 900, color: scoreColor(score), lineHeight: 1 }}>
-          {score ?? "-"}
-        </div>
-        {score != null && (
-          <div style={{ fontSize: 9, color: scoreColor(score), opacity: 0.75 }}>점</div>
-        )}
-      </div>
+      <StockLogo code={item.stockCode} score={item.totalScore} />
 
       {/* 종목명 + 지표 */}
       <div style={{ flex: 1, minWidth: 0 }}>
