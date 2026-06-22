@@ -8,6 +8,54 @@ function scoreColor(s: number) {
   return s >= 90 ? T.green : s >= 75 ? T.accent : s >= 60 ? T.amber : T.red;
 }
 
+function StockLogo({ code, score }: { code: string; score: number }) {
+  const [failed, setFailed] = useState(false);
+  const color = scoreColor(score);
+  const rounded = Math.round(score);
+
+  if (failed) {
+    return (
+      <div style={{
+        flexShrink: 0, width: 44, height: 44, borderRadius: "50%",
+        border: `2px solid ${color}`,
+        background: `${color}12`,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 900, color, fontFamily: T.mono, lineHeight: 1 }}>{rounded}</div>
+        <div style={{ fontSize: 7, color }}>점</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ position: "relative", flexShrink: 0, width: 44, height: 44 }}>
+      <img
+        src={`https://file.alphasquare.co.kr/media/images/stock_logo/kr/${code}.png`}
+        alt={code}
+        onError={() => setFailed(true)}
+        style={{
+          width: 44, height: 44, borderRadius: "50%",
+          objectFit: "cover",
+          border: `1.5px solid ${T.border}`,
+          background: T.card2,
+        }}
+      />
+      <div style={{
+        position: "absolute", bottom: -2, right: -2,
+        minWidth: 18, height: 18, borderRadius: 9,
+        padding: "0 3px",
+        background: color,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 8, fontWeight: 900, color: "#fff", fontFamily: T.mono,
+        border: `1.5px solid ${T.bg}`,
+        boxSizing: "border-box",
+      }}>
+        {rounded}
+      </div>
+    </div>
+  );
+}
+
 export default function ScreenerScreen() {
   const [items, setItems] = useState<ScreenerItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,22 +200,10 @@ export default function ScreenerScreen() {
         )}
         {!loading && !error && filtered.map((s, i) => {
           const score = s.totalScore ?? 0;
-          const color = scoreColor(score);
           return (
             <div key={s.stockCode}>
               <div style={{ padding: "13px 0", display: "flex", alignItems: "center", gap: 10 }}>
-                {/* 점수 원형 배지 */}
-                <div style={{
-                  flexShrink: 0, width: 44, height: 44, borderRadius: "50%",
-                  border: `2px solid ${color}`,
-                  background: `${color}12`,
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                }}>
-                  <div style={{ fontSize: 13, fontWeight: 900, color, fontFamily: T.mono, lineHeight: 1 }}>
-                    {Math.round(score)}
-                  </div>
-                  <div style={{ fontSize: 7, color }}>점</div>
-                </div>
+                <StockLogo code={s.stockCode} score={score} />
 
                 {/* 종목 정보 */}
                 <div style={{ flex: 1, minWidth: 0 }}>
