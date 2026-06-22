@@ -13,20 +13,6 @@ const SORT_OPTS: { v: WatchSort; label: string }[] = [
   { v: "score",  label: "점수순" },
 ];
 
-function scoreColor(s: number | null) {
-  if (s == null) return T.mute;
-  if (s >= 90) return T.green;
-  if (s >= 75) return T.accent;
-  if (s >= 60) return T.amber;
-  return T.red;
-}
-function scoreBg(s: number | null) {
-  if (s == null) return T.card2;
-  if (s >= 90) return T.greenBg;
-  if (s >= 75) return T.accentBg;
-  if (s >= 60) return T.amberBg;
-  return T.redBg;
-}
 function fmtPrice(n: number | null) {
   return n == null ? "-" : n.toLocaleString("ko-KR");
 }
