@@ -1,7 +1,9 @@
 package com.jumisa.repository
 
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.jdbc.support.GeneratedKeyHolder
 import org.springframework.stereotype.Repository
+import java.util.UUID
 
 data class MemberRow(
     val id: Long,
@@ -26,6 +28,22 @@ class MemberRepository(private val jdbc: JdbcTemplate) {
 
     fun insert(username: String, encodedPassword: String, avatar: String?) {
         jdbc.update("insert into member (username, password, avatar) values (?, ?, ?)", username, encodedPassword, avatar)
+    }
+
+    /** 봇 회원 생성. 로그인 불가(noop 비번), is_bot=true. 생성된 member.id 반환. */
+    fun insertBot(username: String, avatar: String): Long {
+        val kh = GeneratedKeyHolder()
+        jdbc.update({ con ->
+            val ps = con.prepareStatement(
+                "insert into member (username, password, avatar, is_bot) values (?,?,?,true)",
+                arrayOf("id"),
+            )
+            ps.setString(1, username)
+            ps.setString(2, "{noop}BOT_${UUID.randomUUID()}")
+            ps.setString(3, avatar)
+            ps
+        }, kh)
+        return kh.key!!.toLong()
     }
 
     fun updateAvatar(username: String, avatar: String) {
