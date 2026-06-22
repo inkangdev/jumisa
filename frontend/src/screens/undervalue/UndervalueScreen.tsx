@@ -306,7 +306,7 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 // ─── 종목 로고 ────────────────────────────────────────────────────────────────
-function StockLogo({ code, score }: { code: string; score: number | null }) {
+export function StockLogo({ code, score }: { code: string; score: number | null }) {
   const [failed, setFailed] = useState(false);
   const color = scoreColor(score);
   const rounded = score != null ? Math.round(score) : null;

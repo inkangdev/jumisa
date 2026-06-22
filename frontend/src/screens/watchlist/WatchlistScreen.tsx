@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { T } from "../../theme";
 import { fetchWatchlist, toggleWatchlist } from "../../api/watchlist";
 import type { ScreenerItem } from "../../api/screener";
+import { StockLogo } from "../undervalue/UndervalueScreen";
 
 type WatchSort = "recent" | "price" | "rate" | "score";
 
@@ -100,7 +101,6 @@ export default function WatchlistScreen() {
 }
 
 function WatchCard({ item, onRemove }: { item: ScreenerItem; onRemove: (code: string) => void }) {
-  const score = item.totalScore != null ? Math.round(item.totalScore) : null;
   const rate = fmtRate(item.changeRate);
 
   return (
@@ -109,19 +109,7 @@ function WatchCard({ item, onRemove }: { item: ScreenerItem; onRemove: (code: st
       padding: "13px 16px",
       borderBottom: `1px solid ${T.border}`,
     }}>
-      <div style={{
-        width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
-        background: scoreBg(score),
-        border: `2px solid ${scoreColor(score)}`,
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      }}>
-        <div style={{ fontSize: 15, fontWeight: 900, color: scoreColor(score), lineHeight: 1 }}>
-          {score ?? "-"}
-        </div>
-        {score != null && (
-          <div style={{ fontSize: 9, color: scoreColor(score), opacity: 0.75 }}>점</div>
-        )}
-      </div>
+      <StockLogo code={item.stockCode} score={item.totalScore} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
