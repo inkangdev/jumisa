@@ -119,6 +119,7 @@ export const createRoom = (body: {
   startPoints: number;
   maxPlayers: number;
   market: string;
+  botCount?: number;
 }) => post<{ id: number }>("/api/battles", body);
 
 export const joinByCode = (inviteCode: string) =>

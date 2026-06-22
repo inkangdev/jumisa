@@ -38,6 +38,14 @@ data class BattleHoldingRow(
     val avgPrice: Int,
 )
 
+data class BotParticipantRow(
+    val id: Long,
+    val memberId: Long,
+    val points: Long,
+    val botStrategy: String,
+    val botSeed: Long,
+)
+
 @Repository
 class BattleRepository(private val jdbc: JdbcTemplate) {
 
@@ -134,6 +142,54 @@ class BattleRepository(private val jdbc: JdbcTemplate) {
         }, kh)
         return kh.key!!.toLong()
     }
+
+    fun insertBotParticipant(roomId: Long, memberId: Long, strategy: String, seed: Long): Long {
+        val kh = GeneratedKeyHolder()
+        jdbc.update({ con ->
+            val ps = con.prepareStatement(
+                "insert into battle_participant (room_id, member_id, points, bot_strategy, bot_seed) values (?,?,0,?,?)",
+                arrayOf("id"),
+            )
+            ps.setLong(1, roomId)
+            ps.setLong(2, memberId)
+            ps.setString(3, strategy)
+            ps.setLong(4, seed)
+            ps
+        }, kh)
+        return kh.key!!.toLong()
+    }
+
+    fun findRoomsByStatus(status: String): List<BattleRoomRow> =
+        jdbc.query("select * from battle_room where status = ?", { rs, _ -> roomMapper(rs) }, status)
+
+    fun findBotParticipants(roomId: Long): List<BotParticipantRow> =
+        jdbc.query(
+            "select id, member_id, points, bot_strategy, bot_seed from battle_participant where room_id = ? and bot_strategy is not null",
+            { rs, _ ->
+                BotParticipantRow(
+                    id = rs.getLong("id"),
+                    memberId = rs.getLong("member_id"),
+                    points = rs.getLong("points"),
+                    botStrategy = rs.getString("bot_strategy"),
+                    botSeed = rs.getLong("bot_seed"),
+                )
+            },
+            roomId,
+        )
+
+    /** 최신 시세 스냅샷 시각. 시세가 하나도 없으면 null. */
+    fun latestSnapshotAt(): Instant? =
+        jdbc.query(
+            "select max(snapshot_at) as ts from stock_price_snapshot",
+            { rs, _ -> rs.getTimestamp("ts")?.toInstant() },
+        ).firstOrNull()
+
+    /** 이 방·스냅샷 조합을 최초로 잡으면 true(매매 진행), 이미 처리됐으면 false. */
+    fun tryMarkBotRun(roomId: Long, snapshotAt: Instant): Boolean =
+        jdbc.update(
+            "insert into bot_run_log (room_id, snapshot_at) values (?, ?) on conflict do nothing",
+            roomId, Timestamp.from(snapshotAt),
+        ) > 0
 
     fun findParticipantsByRoom(roomId: Long): List<BattleParticipantRow> =
         jdbc.query(
