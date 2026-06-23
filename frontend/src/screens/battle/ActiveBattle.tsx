@@ -132,7 +132,7 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
 
       {/* Tab Content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "10px 16px 16px" }}>
-        {tab === "rank" && <RankTab ranking={ranking} myUsername={user.username} />}
+        {tab === "rank" && <RankTab ranking={ranking} myUsername={user.username} roomId={roomId} />}
         {tab === "my" && <MyTab portfolio={portfolio} onGoTrade={() => setTab("trade")} />}
         {tab === "trade" && <TradeTab roomId={roomId} stocks={stocks} portfolio={portfolio} onTraded={fetchData} />}
       </div>
@@ -140,32 +140,74 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
   );
 }
 
-function AnimatedRankRow({ p, i, myUsername }: { p: RankingEntry; i: number; myUsername: string }) {
+type PortfolioState = MyPortfolio | "loading" | "error" | undefined;
+
+function AnimatedRankRow({ p, i, myUsername, expanded, portfolio, onToggle }: {
+  p: RankingEntry; i: number; myUsername: string;
+  expanded: boolean; portfolio: PortfolioState; onToggle: () => void;
+}) {
   const animatedRate = useCountUp(p.returnRate);
   const isMe = p.username === myUsername;
   const pos = p.returnRate >= 0;
   const barWidth = Math.min(100, Math.max(2, (animatedRate + 5) / 20 * 100));
 
   return (
-    <div key={p.memberId} style={{ background: isMe ? `${T.accent}10` : T.card2, border: `1px solid ${isMe ? T.accent : T.border}`, borderRadius: 14, padding: "12px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{ width: 32, textAlign: "center", fontSize: i < 3 ? 22 : 14, fontWeight: 900, color: i === 0 ? T.amber : i === 1 ? T.sub : i === 2 ? "#cd7f32" : T.mute }}>
-        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
-      </div>
-      <div style={{ width: 36, height: 36, borderRadius: "50%", background: isMe ? `linear-gradient(135deg,${T.accent},${T.purple})` : T.card, border: `1px solid ${isMe ? T.accent : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-        {p.avatar ?? "🐂"}
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 700, color: isMe ? T.accentL : T.text, fontSize: 14 }}>{p.username}{isMe && " (나)"}</div>
-        <div style={{ fontSize: 11, color: T.sub, fontFamily: T.mono }}>{fmtP(p.totalAsset)}P</div>
-        <div style={{ marginTop: 5, height: 4, borderRadius: 3, background: T.mute, overflow: "hidden" }}>
-          <div style={{ height: "100%", borderRadius: 3, background: pos ? T.green : T.red, width: `${barWidth}%` }} />
+    <div style={{ marginBottom: 8 }}>
+      <div onClick={onToggle} style={{ background: isMe ? `${T.accent}10` : T.card2, border: `1px solid ${expanded ? T.accent : isMe ? T.accent : T.border}`, borderRadius: expanded ? "14px 14px 0 0" : 14, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+        <div style={{ width: 32, textAlign: "center", fontSize: i < 3 ? 22 : 14, fontWeight: 900, color: i === 0 ? T.amber : i === 1 ? T.sub : i === 2 ? "#cd7f32" : T.mute }}>
+          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
         </div>
-      </div>
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 900, color: pos ? T.green : T.red, fontFamily: T.mono }}>
-          {animatedRate >= 0 ? "+" : ""}{animatedRate.toFixed(2)}%
+        <div style={{ width: 36, height: 36, borderRadius: "50%", background: isMe ? `linear-gradient(135deg,${T.accent},${T.purple})` : T.card, border: `1px solid ${isMe ? T.accent : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+          {p.avatar ?? "🐂"}
         </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontWeight: 700, color: isMe ? T.accentL : T.text, fontSize: 14 }}>{p.username}{isMe && " (나)"}</div>
+          <div style={{ fontSize: 11, color: T.sub, fontFamily: T.mono }}>{fmtP(p.totalAsset)}P</div>
+          <div style={{ marginTop: 5, height: 4, borderRadius: 3, background: T.mute, overflow: "hidden" }}>
+            <div style={{ height: "100%", borderRadius: 3, background: pos ? T.green : T.red, width: `${barWidth}%` }} />
+          </div>
+        </div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: pos ? T.green : T.red, fontFamily: T.mono }}>
+            {animatedRate >= 0 ? "+" : ""}{animatedRate.toFixed(2)}%
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: T.mute, flexShrink: 0, width: 12, textAlign: "center" }}>{expanded ? "▾" : "▸"}</div>
       </div>
+      {expanded && <HoldingsPanel portfolio={portfolio} />}
+    </div>
+  );
+}
+
+function HoldingsPanel({ portfolio }: { portfolio: PortfolioState }) {
+  if (portfolio === undefined || portfolio === "loading")
+    return <div style={{ background: T.bg, border: `1px solid ${T.accent}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "10px 14px", fontSize: 12, color: T.sub }}>보유 종목 불러오는 중…</div>;
+  if (portfolio === "error")
+    return <div style={{ background: T.bg, border: `1px solid ${T.accent}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "10px 14px", fontSize: 12, color: T.red }}>불러오지 못했습니다</div>;
+
+  const stockValue = portfolio.holdings.reduce((s, h) => s + h.currentPrice * h.qty, 0);
+  return (
+    <div style={{ background: T.bg, border: `1px solid ${T.accent}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "10px 14px" }}>
+      <div style={{ fontSize: 11, color: T.sub, marginBottom: 6 }}>현금 {fmtP(portfolio.cash)}P · 주식 {fmtP(stockValue)}P</div>
+      {portfolio.holdings.length === 0 ? (
+        <div style={{ fontSize: 12, color: T.mute, padding: "4px 0" }}>보유 종목 없음 (전액 현금)</div>
+      ) : (
+        portfolio.holdings.map((h) => {
+          const pp = h.pnlRate >= 0;
+          return (
+            <div key={h.stockCode} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderTop: `1px solid ${T.border}` }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{h.stockName}</div>
+                <div style={{ fontSize: 10, color: T.sub }}>{h.qty}주 · 평균 {fmtP(h.avgPrice)}P → 현재 {fmtP(h.currentPrice)}P</div>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: pp ? T.green : T.red }}>{pp ? "+" : ""}{h.pnlRate.toFixed(2)}%</div>
+                <div style={{ fontSize: 10, color: T.sub, fontFamily: T.mono }}>{fmtP(h.currentPrice * h.qty)}P</div>
+              </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
@@ -301,12 +343,30 @@ function RaceTrack({ ranking, myUsername }: { ranking: RankingEntry[]; myUsernam
   );
 }
 
-function RankTab({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
+function RankTab({ ranking, myUsername, roomId }: { ranking: RankingEntry[]; myUsername: string; roomId: number }) {
+  const [openId, setOpenId] = useState<number | null>(null);
+  const [cache, setCache] = useState<Record<number, PortfolioState>>({});
+
+  const toggle = async (memberId: number) => {
+    if (openId === memberId) { setOpenId(null); return; }
+    setOpenId(memberId);
+    setCache((c) => ({ ...c, [memberId]: "loading" }));
+    const r = await battle.getParticipantPortfolio(roomId, memberId);
+    setCache((c) => ({ ...c, [memberId]: r.ok ? r.data : "error" }));
+  };
+
   return (
     <div>
       <RaceTrack ranking={ranking} myUsername={myUsername} />
+      <div style={{ fontSize: 11, color: T.mute, marginBottom: 8 }}>행을 탭하면 보유 종목을 볼 수 있어요</div>
       {ranking.map((p, i) => (
-        <AnimatedRankRow key={p.memberId} p={p} i={i} myUsername={myUsername} />
+        <AnimatedRankRow
+          key={p.memberId}
+          p={p} i={i} myUsername={myUsername}
+          expanded={openId === p.memberId}
+          portfolio={cache[p.memberId]}
+          onToggle={() => toggle(p.memberId)}
+        />
       ))}
     </div>
   );
