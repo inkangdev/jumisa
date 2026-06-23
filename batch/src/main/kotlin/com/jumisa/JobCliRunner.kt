@@ -10,6 +10,7 @@ import org.springframework.boot.ExitCodeGenerator
 import org.springframework.boot.SpringApplication
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.stereotype.Component
+import java.time.LocalDate
 import kotlin.system.exitProcess
 
 /**
@@ -27,10 +28,12 @@ class JobCliRunner(
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val alias = mapOf(
-        "master" to "stockMasterJob",
-        "price" to "priceSnapshotJob",
-        "finance" to "financeJob",
-        "undervalue" to "undervalueScoreJob",
+        "master"      to "stockMasterJob",
+        "price"       to "priceSnapshotJob",
+        "finance"     to "financeJob",
+        "undervalue"  to "undervalueScoreJob",
+        "closing"     to "closingJob",
+        "historyFill" to "historyFillJob",
     )
 
     override fun run(args: ApplicationArguments) {
@@ -50,6 +53,9 @@ class JobCliRunner(
             if (beanName == "priceSnapshotJob") {
                 val now = System.currentTimeMillis()
                 pb.addLong("snapshotAt", now - (now % (5 * 60_000L)))   // 5분 격자
+            }
+            if (beanName == "closingJob") {
+                pb.addString("baseDate", LocalDate.now().toString())
             }
             log.info("CLI 잡 실행 시작: {}", beanName)
             val exec = jobLauncher.run(job, pb.toJobParameters())

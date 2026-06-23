@@ -27,9 +27,9 @@ class UndervalueRepository(private val jdbc: JdbcTemplate) {
             insert into undervalue_score
               (base_date, stock_code, total_score, rank, per_score, pbr_score, ev_ebitda_score, growth_score, per, pbr)
             with latest_snap as (
-                select distinct on (stock_code) stock_code, current_price, market_cap_eokwon
-                from stock_price_snapshot
-                order by stock_code, snapshot_at desc
+                select distinct on (stock_code) stock_code, close_price as current_price, market_cap_eokwon
+                from stock_daily
+                order by stock_code, base_date desc
             ),
             latest_fin as (
                 select distinct on (stock_code) stock_code, base_ym,

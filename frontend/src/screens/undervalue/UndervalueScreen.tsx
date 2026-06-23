@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { T } from "../../theme";
 import { fetchScreener, type ScreenerItem, type ScreenerParams, type ScreenerSort } from "../../api/screener";
 import { fetchWatchlist, toggleWatchlist } from "../../api/watchlist";
+import StockDetailScreen from "./StockDetailScreen";
 
 // ─── 점수 색상 ────────────────────────────────────────────────────────────────
 function scoreColor(s: number | null) {
@@ -57,6 +58,7 @@ export default function UndervalueScreen() {
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
   const [watched, setWatched] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<ScreenerItem | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,6 +100,24 @@ export default function UndervalueScreen() {
     ? items.filter((it) =>
         (it.name ?? "").toLowerCase().includes(q) || it.stockCode.toLowerCase().includes(q))
     : items;
+
+  if (selected) {
+    return (
+      <StockDetailScreen
+        stockCode={selected.stockCode}
+        initialItem={selected}
+        isWatched={watched.has(selected.stockCode)}
+        onBack={() => setSelected(null)}
+        onWatchChange={(code, isWatched) => {
+          setWatched((prev) => {
+            const next = new Set(prev);
+            isWatched ? next.add(code) : next.delete(code);
+            return next;
+          });
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: T.bg, fontFamily: T.sans }}>
@@ -186,6 +206,7 @@ export default function UndervalueScreen() {
               item={item}
               isWatched={watched.has(item.stockCode)}
               onToggle={handleToggle}
+              onClick={() => setSelected(item)}
             />
           ))
         )}
@@ -354,19 +375,24 @@ export function StockLogo({ code, score }: { code: string; score: number | null 
 }
 
 // ─── 종목 카드 ────────────────────────────────────────────────────────────────
-function StockCard({ item, isWatched, onToggle }: {
+function StockCard({ item, isWatched, onToggle, onClick }: {
   item: ScreenerItem;
   isWatched: boolean;
   onToggle: (code: string, currently: boolean) => void;
+  onClick: () => void;
 }) {
   const rate = fmtRate(item.changeRate);
 
   return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      padding: "13px 16px",
-      borderBottom: `1px solid ${T.border}`,
-    }}>
+    <div
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "13px 16px",
+        borderBottom: `1px solid ${T.border}`,
+        cursor: "pointer",
+      }}
+    >
       <StockLogo code={item.stockCode} score={item.totalScore} />
 
       {/* 종목명 + 지표 */}
@@ -389,7 +415,7 @@ function StockCard({ item, isWatched, onToggle }: {
       </div>
 
       <button
-        onClick={() => onToggle(item.stockCode, isWatched)}
+        onClick={(e) => { e.stopPropagation(); onToggle(item.stockCode, isWatched); }}
         style={{
           width: 30, height: 30, flexShrink: 0,
           background: "transparent", border: "none",

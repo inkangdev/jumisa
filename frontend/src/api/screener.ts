@@ -28,6 +28,18 @@ export type ScreenerParams = {
   sector?: string;
 };
 
+export type StockDetail = ScreenerItem;
+
+export type ChartPoint = { date: string; price: number };
+
+export type ChartPeriod = "1M" | "3M" | "6M" | "1Y";
+
+export type StockChartResponse = {
+  stockCode: string;
+  period: string;
+  points: ChartPoint[];
+};
+
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
 export async function fetchScreener(params: ScreenerParams = {}): Promise<Result<ScreenerResponse>> {
@@ -45,6 +57,37 @@ export async function fetchScreener(params: ScreenerParams = {}): Promise<Result
       return { ok: false, error: (data as { error?: string })?.error ?? `오류 (${res.status})` };
     }
     return { ok: true, data: data as ScreenerResponse };
+  } catch {
+    return { ok: false, error: "서버에 연결할 수 없습니다" };
+  }
+}
+
+export async function fetchStockDetail(stockCode: string): Promise<Result<StockDetail>> {
+  try {
+    const res = await fetch(`/api/screener/${stockCode}`, { credentials: "include" });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      if (res.status === 401) notifyUnauthorized();
+      return { ok: false, error: (data as { error?: string })?.error ?? `오류 (${res.status})` };
+    }
+    return { ok: true, data: data as StockDetail };
+  } catch {
+    return { ok: false, error: "서버에 연결할 수 없습니다" };
+  }
+}
+
+export async function fetchStockChart(
+  stockCode: string,
+  period: ChartPeriod,
+): Promise<Result<StockChartResponse>> {
+  try {
+    const res = await fetch(`/api/screener/${stockCode}/chart?period=${period}`, { credentials: "include" });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      if (res.status === 401) notifyUnauthorized();
+      return { ok: false, error: (data as { error?: string })?.error ?? `오류 (${res.status})` };
+    }
+    return { ok: true, data: data as StockChartResponse };
   } catch {
     return { ok: false, error: "서버에 연결할 수 없습니다" };
   }

@@ -37,6 +37,12 @@ spring:
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
 
+# === 한국투자증권(KIS) Open API (차트 조회용) ===
+kis:
+  env: ${KIS_ENV:vts}
+  app-key: ${KIS_APP_KEY:}
+  app-secret: ${KIS_APP_SECRET:}
+
 server:
   # 컨테이너는 PORT 주입(nginx 뒤). 로컬은 SERVER_PORT, 둘 다 없으면 8080.
   port: ${PORT:${SERVER_PORT:8080}}

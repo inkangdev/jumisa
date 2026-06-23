@@ -42,3 +42,23 @@ data class CurrentPrice(
     @JsonProperty("w52_hgpr") val w52High: String?,
     @JsonProperty("w52_lwpr") val w52Low: String?,
 )
+
+/** 일별 차트 조회(FHKST03010100) output2 항목 */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class DailyChartItem(
+    @JsonProperty("stck_bsop_date") val date: String?,        // "20260101"
+    @JsonProperty("stck_clpr")      val close: String?,       // 종가
+    @JsonProperty("stck_oprc")      val open: String?,        // 시가
+    @JsonProperty("stck_hgpr")      val high: String?,        // 고가
+    @JsonProperty("stck_lwpr")      val low: String?,         // 저가
+    @JsonProperty("acml_vol")       val volume: String?,      // 누적거래량
+    @JsonProperty("acml_tr_pbmn")   val tradeAmount: String?, // 누적거래대금
+)
+
+/** 일별 차트 조회(FHKST03010100) 응답 래퍼 */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class DailyChartResponse(
+    @JsonProperty("rt_cd")   val rtCd: String?,
+    @JsonProperty("msg1")    val msg: String?,
+    @JsonProperty("output2") val output2: List<DailyChartItem>?,
+)
