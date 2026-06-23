@@ -119,9 +119,20 @@ class BattleService(
 
     fun getMyPortfolio(memberId: Long, roomId: Long): MyPortfolioDto {
         val participant = repo.findParticipant(roomId, memberId) ?: error("참가자가 아닙니다")
+        return portfolioOf(participant)
+    }
+
+    /** 같은 방 다른 참가자(봇 포함)의 포트폴리오. 요청자도 그 방 참가자여야 조회 가능. */
+    fun getParticipantPortfolio(viewerId: Long, roomId: Long, targetMemberId: Long): MyPortfolioDto {
+        require(repo.findParticipant(roomId, viewerId) != null) { "대결 참가자만 볼 수 있습니다" }
+        val target = repo.findParticipant(roomId, targetMemberId) ?: error("참가자가 아닙니다")
+        return portfolioOf(target)
+    }
+
+    private fun portfolioOf(participant: BattleParticipantRow): MyPortfolioDto {
         val holdings = repo.findHoldingsByParticipant(participant.id).map { h ->
             val cur = repo.findLatestPrice(h.stockCode) ?: h.avgPrice
-            val pnlRate = (cur - h.avgPrice).toDouble() / h.avgPrice * 100.0
+            val pnlRate = if (h.avgPrice == 0) 0.0 else (cur - h.avgPrice).toDouble() / h.avgPrice * 100.0
             HoldingDto(h.stockCode, repo.findStockName(h.stockCode) ?: h.stockCode, h.qty, h.avgPrice, cur, pnlRate)
         }
         return MyPortfolioDto(participant.points, holdings)

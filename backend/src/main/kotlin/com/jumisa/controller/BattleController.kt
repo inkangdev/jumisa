@@ -68,4 +68,9 @@ class BattleController(
     fun getMyPortfolio(@PathVariable id: Long, auth: Authentication): ResponseEntity<Any> =
         try { ResponseEntity.ok(service.getMyPortfolio(memberId(auth), id)) }
         catch (e: Exception) { err(e) }
+
+    @GetMapping("/{id}/participants/{memberId}/portfolio")
+    fun getParticipantPortfolio(@PathVariable id: Long, @PathVariable memberId: Long, auth: Authentication): ResponseEntity<Any> =
+        try { ResponseEntity.ok(service.getParticipantPortfolio(memberId(auth), id, memberId)) }
+        catch (e: Exception) { err(e) }
 }
