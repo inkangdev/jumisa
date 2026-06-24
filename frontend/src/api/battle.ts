@@ -72,6 +72,7 @@ export type RoomsResponse = {
   waiting: RoomSummary[];
   active: RoomSummary[];
   myWaiting: RoomSummary[];
+  finished: RoomSummary[];
 };
 
 import { notifyUnauthorized } from "./session";

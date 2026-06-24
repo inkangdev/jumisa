@@ -165,6 +165,7 @@ class BattleService(
             "waiting" to repo.findWaitingRoomsNotJoined(memberId).map(::toSummary),
             "active" to repo.findRoomsByMemberAndStatus(memberId, "active").map(::toSummary),
             "myWaiting" to repo.findRoomsByMemberAndStatus(memberId, "waiting").map(::toSummary),
+            "finished" to repo.findRoomsByMemberAndStatus(memberId, "finished").map(::toSummary),
         )
     }
 
