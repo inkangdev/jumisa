@@ -13,7 +13,7 @@ type Props = {
 
 export default function BattleLobby({ onNavigate }: Props) {
   const T = useTheme();
-  const [rooms, setRooms] = useState<{ waiting: RoomSummary[]; active: RoomSummary[]; myWaiting: RoomSummary[] } | null>(null);
+  const [rooms, setRooms] = useState<{ waiting: RoomSummary[]; active: RoomSummary[]; myWaiting: RoomSummary[]; finished: RoomSummary[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState("");
   const [joinLoading, setJoinLoading] = useState(false);
@@ -149,6 +149,30 @@ export default function BattleLobby({ onNavigate }: Props) {
                   onJoin={() => handleJoin(r)}
                 />
               ))
+            )}
+
+            {/* 완료된 대결 */}
+            {(rooms?.finished?.length ?? 0) > 0 && (
+              <>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.mute, marginBottom: 8, marginTop: 8 }}>완료된 대결</div>
+                {rooms!.finished.map((r) => (
+                  <div key={r.id} style={{ background: T.card2, borderRadius: 16, padding: "14px 16px", marginBottom: 10, border: `1px solid ${T.border}`, opacity: 0.8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <div style={{ fontWeight: 700, color: T.text, fontSize: 14 }}>{r.name}</div>
+                      <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: `${T.mute}20`, color: T.mute, border: `1px solid ${T.mute}30` }}>종료</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: T.sub, marginBottom: 10 }}>
+                      {r.participantCount}명 참가 · {r.periodDays}일 대결
+                    </div>
+                    <button
+                      onClick={() => onNavigate("active", r.id)}
+                      style={{ width: "100%", padding: "10px 0", borderRadius: 12, border: `1px solid ${T.border}`, background: "transparent", color: T.sub, fontFamily: T.sans, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+                    >
+                      대결 결과 보기 →
+                    </button>
+                  </div>
+                ))}
+              </>
             )}
           </>
         )}

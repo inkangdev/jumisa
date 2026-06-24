@@ -49,6 +49,7 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
   const [stocks, setStocks] = useState<StockWithPrice[]>([]);
   const [roomName, setRoomName] = useState("");
   const [endsAt, setEndsAt] = useState<string | null>(null);
+  const [roomStatus, setRoomStatus] = useState<string>("active");
   const [loading, setLoading] = useState(true);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -60,7 +61,7 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
     ]);
     if (rankR.ok) setRanking(rankR.data);
     if (portR.ok) setPortfolio(portR.data);
-    if (roomR.ok) { setRoomName(roomR.data.name); setEndsAt(roomR.data.endsAt); }
+    if (roomR.ok) { setRoomName(roomR.data.name); setEndsAt(roomR.data.endsAt); setRoomStatus(roomR.data.status); }
     setLoading(false);
   };
 
@@ -91,7 +92,9 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
         </button>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <div style={{ fontSize: 16, fontWeight: 900, color: T.text }}>⚔️ {roomName}</div>
-          {daysLeft !== null && (
+          {roomStatus === "finished" ? (
+            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: `${T.mute}20`, color: T.mute, border: `1px solid ${T.mute}30` }}>종료</span>
+          ) : daysLeft !== null && (
             <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: `${T.red}20`, color: T.red, border: `1px solid ${T.red}30` }}>D-{daysLeft}</span>
           )}
         </div>
@@ -123,7 +126,10 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
 
         {/* 탭 */}
         <div style={{ display: "flex", gap: 6, marginBottom: 2 }}>
-          {([["rank", "🏆 순위"], ["my", "💼 내 투자"], ["trade", "📈 거래"]] as [Tab, string][]).map(([k, l]) => (
+          {(roomStatus === "finished"
+            ? [["rank", "🏆 최종 순위"], ["my", "💼 내 투자"]] as [Tab, string][]
+            : [["rank", "🏆 순위"], ["my", "💼 내 투자"], ["trade", "📈 거래"]] as [Tab, string][]
+          ).map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)} style={{ flex: 1, padding: "8px 0", borderRadius: 12, border: `1px solid ${tab === k ? T.accent : T.border}`, background: tab === k ? T.accentBg : "transparent", color: tab === k ? T.accentL : T.sub, fontFamily: T.sans, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
               {l}
             </button>
