@@ -38,6 +38,14 @@ data class BattleHoldingRow(
     val avgPrice: Int,
 )
 
+data class BotParticipantRow(
+    val id: Long,
+    val memberId: Long,
+    val points: Long,
+    val botStrategy: String,
+    val botSeed: Long,
+)
+
 @Repository
 class BattleRepository(private val jdbc: JdbcTemplate) {
 
@@ -134,6 +142,54 @@ class BattleRepository(private val jdbc: JdbcTemplate) {
         }, kh)
         return kh.key!!.toLong()
     }
+
+    fun insertBotParticipant(roomId: Long, memberId: Long, strategy: String, seed: Long): Long {
+        val kh = GeneratedKeyHolder()
+        jdbc.update({ con ->
+            val ps = con.prepareStatement(
+                "insert into battle_participant (room_id, member_id, points, bot_strategy, bot_seed) values (?,?,0,?,?)",
+                arrayOf("id"),
+            )
+            ps.setLong(1, roomId)
+            ps.setLong(2, memberId)
+            ps.setString(3, strategy)
+            ps.setLong(4, seed)
+            ps
+        }, kh)
+        return kh.key!!.toLong()
+    }
+
+    fun findRoomsByStatus(status: String): List<BattleRoomRow> =
+        jdbc.query("select * from battle_room where status = ?", { rs, _ -> roomMapper(rs) }, status)
+
+    fun findBotParticipants(roomId: Long): List<BotParticipantRow> =
+        jdbc.query(
+            "select id, member_id, points, bot_strategy, bot_seed from battle_participant where room_id = ? and bot_strategy is not null",
+            { rs, _ ->
+                BotParticipantRow(
+                    id = rs.getLong("id"),
+                    memberId = rs.getLong("member_id"),
+                    points = rs.getLong("points"),
+                    botStrategy = rs.getString("bot_strategy"),
+                    botSeed = rs.getLong("bot_seed"),
+                )
+            },
+            roomId,
+        )
+
+    /** 최신 시세 스냅샷 시각. 시세가 하나도 없으면 null. */
+    fun latestSnapshotAt(): Instant? =
+        jdbc.query(
+            "select max(snapshot_at) as ts from stock_price_snapshot",
+            { rs, _ -> rs.getTimestamp("ts")?.toInstant() },
+        ).firstOrNull()
+
+    /** 이 방·스냅샷 조합을 최초로 잡으면 true(매매 진행), 이미 처리됐으면 false. */
+    fun tryMarkBotRun(roomId: Long, snapshotAt: Instant): Boolean =
+        jdbc.update(
+            "insert into bot_run_log (room_id, snapshot_at) values (?, ?) on conflict do nothing",
+            roomId, Timestamp.from(snapshotAt),
+        ) > 0
 
     fun findParticipantsByRoom(roomId: Long): List<BattleParticipantRow> =
         jdbc.query(
@@ -248,7 +304,12 @@ class BattleRepository(private val jdbc: JdbcTemplate) {
             memberId,
         ).firstOrNull()
 
-    fun findKrStocksWithLatestPrice(limit: Int = 200): List<StockWithPriceDto> =
+    /**
+     * 대결 거래 가능 종목 = 거래가능 + 시세(최신 스냅샷) 있는 종목 전체.
+     * 스크리너(undervalue_score)와 커버리지를 맞추기 위해 limit·시세창 제거 —
+     * 시세는 종목별 최신 1건(체결가 findLatestPrice 와 동일 기준), 인트라데이 7일 보관이라 자연 상한.
+     */
+    fun findKrStocksWithLatestPrice(): List<StockWithPriceDto> =
         jdbc.query(
             """
             select s.stock_code, s.name, sp.current_price, sp.change_rate
@@ -256,12 +317,10 @@ class BattleRepository(private val jdbc: JdbcTemplate) {
             join (
                 select distinct on (stock_code) stock_code, current_price, change_rate
                 from stock_price_snapshot
-                where snapshot_at > now() - interval '3 days'
                 order by stock_code, snapshot_at desc
             ) sp on sp.stock_code = s.stock_code
             where s.is_tradable = true
             order by s.stock_code
-            limit ?
             """,
             { rs, _ ->
                 StockWithPriceDto(
@@ -271,6 +330,5 @@ class BattleRepository(private val jdbc: JdbcTemplate) {
                     changeRate = rs.getBigDecimal("change_rate")?.toDouble(),
                 )
             },
-            limit,
         )
 }

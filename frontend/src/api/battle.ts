@@ -119,6 +119,7 @@ export const createRoom = (body: {
   startPoints: number;
   maxPlayers: number;
   market: string;
+  botCount?: number;
 }) => post<{ id: number }>("/api/battles", body);
 
 export const joinByCode = (inviteCode: string) =>
@@ -138,5 +139,8 @@ export const trade = (id: number, body: { stockCode: string; type: string; qty: 
 export const getRanking = (id: number) => get<RankingEntry[]>(`/api/battles/${id}/ranking`);
 
 export const getMyPortfolio = (id: number) => get<MyPortfolio>(`/api/battles/${id}/portfolio`);
+
+export const getParticipantPortfolio = (id: number, memberId: number) =>
+  get<MyPortfolio>(`/api/battles/${id}/participants/${memberId}/portfolio`);
 
 export const listStocks = () => get<StockWithPrice[]>("/api/battles/stocks");

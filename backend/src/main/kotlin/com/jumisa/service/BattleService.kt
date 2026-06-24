@@ -9,7 +9,10 @@ import java.time.temporal.ChronoUnit
 import kotlin.random.Random
 
 @Service
-class BattleService(private val repo: BattleRepository) {
+class BattleService(
+    private val repo: BattleRepository,
+    private val memberRepo: MemberRepository,
+) {
 
     @Transactional
     fun createRoom(hostMemberId: Long, req: CreateRoomRequest): Long {
@@ -19,10 +22,17 @@ class BattleService(private val repo: BattleRepository) {
         require(req.startPoints in listOf(500_000L, 1_000_000L, 3_000_000L)) { "시작 포인트가 올바르지 않습니다" }
         require(req.maxPlayers in 2..20) { "최대 인원은 2~20명 사이여야 합니다" }
         require(req.market in listOf("both", "kr", "us")) { "시장 설정이 올바르지 않습니다" }
+        require(req.botCount in 0..(req.maxPlayers - 1)) { "봇 수는 0 ~ (최대 인원 - 1) 사이여야 합니다" }
 
         val inviteCode = generateInviteCode()
         val roomId = repo.insertRoom(name, hostMemberId, inviteCode, req.periodDays, req.startPoints, req.maxPlayers, req.market)
         repo.insertParticipant(roomId, hostMemberId, 0L)
+
+        // 봇 편성 — MVP 는 random 전략. 봇도 일반 참가자라 시작 시 동일 시작 포인트를 받는다.
+        repeat(req.botCount) { i ->
+            val botMemberId = memberRepo.insertBot(uniqueBotName(i), "🤖")
+            repo.insertBotParticipant(roomId, botMemberId, "random", Random.nextLong())
+        }
         return roomId
     }
 
@@ -109,9 +119,20 @@ class BattleService(private val repo: BattleRepository) {
 
     fun getMyPortfolio(memberId: Long, roomId: Long): MyPortfolioDto {
         val participant = repo.findParticipant(roomId, memberId) ?: error("참가자가 아닙니다")
+        return portfolioOf(participant)
+    }
+
+    /** 같은 방 다른 참가자(봇 포함)의 포트폴리오. 요청자도 그 방 참가자여야 조회 가능. */
+    fun getParticipantPortfolio(viewerId: Long, roomId: Long, targetMemberId: Long): MyPortfolioDto {
+        require(repo.findParticipant(roomId, viewerId) != null) { "대결 참가자만 볼 수 있습니다" }
+        val target = repo.findParticipant(roomId, targetMemberId) ?: error("참가자가 아닙니다")
+        return portfolioOf(target)
+    }
+
+    private fun portfolioOf(participant: BattleParticipantRow): MyPortfolioDto {
         val holdings = repo.findHoldingsByParticipant(participant.id).map { h ->
             val cur = repo.findLatestPrice(h.stockCode) ?: h.avgPrice
-            val pnlRate = (cur - h.avgPrice).toDouble() / h.avgPrice * 100.0
+            val pnlRate = if (h.avgPrice == 0) 0.0 else (cur - h.avgPrice).toDouble() / h.avgPrice * 100.0
             HoldingDto(h.stockCode, repo.findStockName(h.stockCode) ?: h.stockCode, h.qty, h.avgPrice, cur, pnlRate)
         }
         return MyPortfolioDto(participant.points, holdings)
@@ -149,8 +170,20 @@ class BattleService(private val repo: BattleRepository) {
 
     fun listKrStocks(): List<StockWithPriceDto> = repo.findKrStocksWithLatestPrice()
 
-    private fun generateInviteCode(): String {
+    private fun generateInviteCode(): String = randCode(6)
+
+    private fun randCode(n: Int): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        return (1..6).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+        return (1..n).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+    }
+
+    private val botNames = listOf("랜덤이", "주사위봇", "원숭이", "다트왕", "찍신", "감자봇", "묻지마봇", "동전던지기")
+
+    /** 봇 표시 이름(=member.username, 유니크). 예: "랜덤이·A3F" */
+    private fun uniqueBotName(idx: Int): String {
+        val base = botNames[idx % botNames.size]
+        var name = "$base·${randCode(3)}"
+        while (memberRepo.existsByUsername(name)) name = "$base·${randCode(3)}"
+        return name
     }
 }

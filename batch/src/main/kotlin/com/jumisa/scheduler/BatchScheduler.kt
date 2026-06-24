@@ -8,6 +8,7 @@ import org.springframework.batch.core.launch.JobLauncher
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
+import java.time.LocalDate
 
 /**
  * 배치 스케줄러 (Asia/Seoul, 주말 제외). 기본 비활성:
@@ -22,6 +23,7 @@ class BatchScheduler(
     private val priceSnapshotJob: Job,
     private val financeJob: Job,
     private val undervalueScoreJob: Job,
+    private val closingJob: Job,
     private val priceRepository: PriceRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -62,6 +64,16 @@ class BatchScheduler(
     fun runFinance() {
         val params = JobParametersBuilder().addLong("runAt", System.currentTimeMillis()).toJobParameters()
         jobLauncher.run(financeJob, params)
+    }
+
+    /** 종가 일봉 적재: 장 마감 후 15:30. */
+    @Scheduled(cron = "0 30 15 * * MON-FRI", zone = "Asia/Seoul")
+    fun runClosing() {
+        val params = JobParametersBuilder()
+            .addString("baseDate", LocalDate.now().toString())
+            .addLong("runAt", System.currentTimeMillis())
+            .toJobParameters()
+        jobLauncher.run(closingJob, params)
     }
 
     /** 저평가 점수 산출/적재: 1시간마다(매시 정각). PER30% + PBR30% + EV/EBITDA25% + 성장률15%. */

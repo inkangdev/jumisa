@@ -35,6 +35,7 @@ export default function CreateRoom({ onBack, onCreated }: Props) {
   const [period, setPeriod] = useState("7");
   const [startPoints, setStartPoints] = useState(1_000_000);
   const [maxPlayers, setMaxPlayers] = useState(6);
+  const [botCount, setBotCount] = useState(0);
   const [market, setMarket] = useState("kr");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +44,7 @@ export default function CreateRoom({ onBack, onCreated }: Props) {
     if (!name.trim()) { setError("방 이름을 입력해주세요"); return; }
     setLoading(true);
     setError(null);
-    const r = await battle.createRoom({ name: name.trim(), periodDays: parseInt(period), startPoints, maxPlayers, market });
+    const r = await battle.createRoom({ name: name.trim(), periodDays: parseInt(period), startPoints, maxPlayers, market, botCount });
     setLoading(false);
     if (r.ok) onCreated(r.data.id);
     else setError(r.error);
@@ -114,11 +115,22 @@ export default function CreateRoom({ onBack, onCreated }: Props) {
         <div style={fieldStyle}>
           <span style={labelStyle}>최대 인원</span>
           <div style={{ display: "flex", alignItems: "center", gap: 16, justifyContent: "center" }}>
-            <button onClick={() => setMaxPlayers((p) => Math.max(2, p - 1))} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer" }}>−</button>
+            <button onClick={() => setMaxPlayers((p) => { const n = Math.max(2, p - 1); setBotCount((b) => Math.min(b, n - 1)); return n; })} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer" }}>−</button>
             <span style={{ fontSize: 24, fontWeight: 900, color: T.text, fontFamily: T.mono, minWidth: 40, textAlign: "center" }}>{maxPlayers}</span>
             <button onClick={() => setMaxPlayers((p) => Math.min(20, p + 1))} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer" }}>+</button>
             <span style={{ fontSize: 13, color: T.sub }}>명</span>
           </div>
+        </div>
+
+        <div style={fieldStyle}>
+          <span style={labelStyle}>🤖 컴퓨터(봇) 추가 — 자동 매매 상대</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, justifyContent: "center" }}>
+            <button onClick={() => setBotCount((b) => Math.max(0, b - 1))} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer" }}>−</button>
+            <span style={{ fontSize: 24, fontWeight: 900, color: T.text, fontFamily: T.mono, minWidth: 40, textAlign: "center" }}>{botCount}</span>
+            <button onClick={() => setBotCount((b) => Math.min(maxPlayers - 1, b + 1))} style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${T.border}`, background: T.bg, color: T.text, fontSize: 20, cursor: "pointer" }}>+</button>
+            <span style={{ fontSize: 13, color: T.sub }}>명</span>
+          </div>
+          <div style={{ fontSize: 10, color: T.mute, textAlign: "center", marginTop: 6 }}>랜덤 전략으로 장중 매시 자동 매매합니다 (최대 인원에 포함)</div>
         </div>
 
         <div style={fieldStyle}>
@@ -140,6 +152,7 @@ export default function CreateRoom({ onBack, onCreated }: Props) {
               [T.amber, `${fmtPoint(startPoints)}P 지급`],
               [T.accent, `${period}일 대결`],
               [T.purple, `최대 ${maxPlayers}명`],
+              ...(botCount > 0 ? [[T.sub, `🤖 봇 ${botCount}`]] as [string, string][] : []),
             ].map(([color, text]) => (
               <span key={text} style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20, background: `${color}20`, color, border: `1px solid ${color}30` }}>{text}</span>
             ))}

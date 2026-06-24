@@ -8,6 +8,7 @@ data class CreateRoomRequest(
     val startPoints: Long,
     val maxPlayers: Int,
     val market: String,
+    val botCount: Int = 0,        // 컴퓨터(랜덤 봇) 추가 인원
 )
 
 data class JoinRoomRequest(

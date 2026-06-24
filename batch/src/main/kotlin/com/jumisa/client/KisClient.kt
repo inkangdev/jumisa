@@ -100,6 +100,40 @@ class KisClient(
         }
     }
 
+    /** 국내주식 일별 차트 (TR: FHKST03010100). startDate/endDate: "yyyyMMdd". 실패 시 빈 리스트. */
+    fun dailyChart(stockCode: String, startDate: String, endDate: String): List<DailyChartItem> {
+        rateLimiter.acquire()
+        val body = rest.get()
+            .uri {
+                it.path("/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice")
+                    .queryParam("fid_cond_mrkt_div_code", "J")
+                    .queryParam("fid_input_iscd", stockCode)
+                    .queryParam("fid_input_date_1", startDate)
+                    .queryParam("fid_input_date_2", endDate)
+                    .queryParam("fid_period_div_code", "D")
+                    .queryParam("fid_org_adj_prc", "0")
+                    .build()
+            }
+            .header("authorization", "Bearer ${accessToken()}")
+            .header("appkey", props.appKey)
+            .header("appsecret", props.appSecret)
+            .header("tr_id", "FHKST03010100")
+            .retrieve().body(String::class.java) ?: return emptyList()
+
+        return try {
+            val resp = objectMapper.readValue(body, DailyChartResponse::class.java)
+            if (resp.rtCd != "0") {
+                log.warn("[{}] 일별 차트 조회 실패 rt_cd={} {}", stockCode, resp.rtCd, resp.msg)
+                emptyList()
+            } else {
+                resp.output2 ?: emptyList()
+            }
+        } catch (e: Exception) {
+            log.warn("[{}] 일별 차트 파싱 실패: {}", stockCode, e.message)
+            emptyList()
+        }
+    }
+
     /** dev 디버깅용 raw JSON. */
     fun currentPriceRaw(stockCode: String): String {
         rateLimiter.acquire()
