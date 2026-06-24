@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
 import {
   type ChartPeriod,
   type ChartPoint,
@@ -28,6 +28,7 @@ const PAD = { t: 12, r: 8, b: 18, l: 8 };
 const CHART_H = 180;
 
 export default function StockDetailScreen({ stockCode, initialItem, isWatched, onBack, onWatchChange }: Props) {
+  const T = useTheme();
   const [detail, setDetail] = useState<StockDetail>(initialItem);
   const [period, setPeriod] = useState<ChartPeriod>("3M");
   const [points, setPoints] = useState<ChartPoint[]>([]);
@@ -145,6 +146,7 @@ export default function StockDetailScreen({ stockCode, initialItem, isWatched, o
 
 // ── 기간 등락 표시 ────────────────────────────────────────────────────────────
 function PeriodChange({ points, period, currentRate }: { points: ChartPoint[]; period: ChartPeriod; currentRate: number }) {
+  const T = useTheme();
   const LABEL: Record<ChartPeriod, string> = { "1M": "1개월", "3M": "3개월", "6M": "6개월", "1Y": "1년" };
   if (points.length >= 2) {
     const first = points[0].price;
@@ -170,6 +172,7 @@ function PeriodChange({ points, period, currentRate }: { points: ChartPoint[]; p
 
 // ── SVG 차트 ─────────────────────────────────────────────────────────────────
 function StockChart({ points }: { points: ChartPoint[] }) {
+  const T = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth]     = useState(358);
   const [tipIdx, setTipIdx]   = useState<number | null>(null);
@@ -277,6 +280,7 @@ function StockChart({ points }: { points: ChartPoint[] }) {
 
 // ── 기간 고가·저가·평균 요약 ──────────────────────────────────────────────────
 function PeriodSummary({ points }: { points: ChartPoint[] }) {
+  const T = useTheme();
   const prices = points.map((p) => p.price);
   const hi  = Math.max(...prices);
   const lo  = Math.min(...prices);
@@ -298,6 +302,7 @@ function PeriodSummary({ points }: { points: ChartPoint[] }) {
 function MetricCard({ label, value, hint, valueColor, valueFontSize }: {
   label: string; value: string; hint?: string; valueColor?: string; valueFontSize?: number;
 }) {
+  const T = useTheme();
   return (
     <div style={{ background: T.card, borderRadius: 12, border: `1px solid ${T.border}`, padding: "12px 14px" }}>
       <div style={{ fontSize: 11, color: T.sub, marginBottom: 6 }}>{label}</div>
