@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
+import type { Theme } from "../../theme";
 import { fetchScreener, type ScreenerItem, type ScreenerParams, type ScreenerSort } from "../../api/screener";
 import { fetchWatchlist, toggleWatchlist } from "../../api/watchlist";
 import StockDetailScreen from "./StockDetailScreen";
 
-// ─── 점수 색상 ────────────────────────────────────────────────────────────────
-function scoreColor(s: number | null) {
+function scoreColor(s: number | null, T: Theme) {
   if (s == null) return T.mute;
   if (s >= 90) return T.green;
   if (s >= 75) return T.accent;
   if (s >= 60) return T.amber;
   return T.red;
 }
-function scoreBg(s: number | null) {
+function scoreBg(s: number | null, T: Theme) {
   if (s == null) return T.card2;
   if (s >= 90) return T.greenBg;
   if (s >= 75) return T.accentBg;
@@ -24,7 +24,7 @@ function scoreBg(s: number | null) {
 function fmtPrice(n: number | null) {
   return n == null ? "-" : n.toLocaleString("ko-KR");
 }
-function fmtRate(r: number | null): { text: string; color: string } {
+function fmtRate(r: number | null, T: Theme): { text: string; color: string } {
   if (r == null) return { text: "-", color: T.sub };
   const text = (r > 0 ? "+" : "") + r.toFixed(1) + "%";
   return { text, color: r > 0 ? T.green : r < 0 ? T.red : T.sub };
@@ -45,6 +45,7 @@ const SORT_OPTS: { v: ScreenerSort; label: string }[] = [
 
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function UndervalueScreen() {
+  const T = useTheme();
   const [market,     setMarket]     = useState<"kr" | "us">("kr");
   const [filterOpen, setFilterOpen] = useState(false);
   const [query,      setQuery]      = useState("");
@@ -219,6 +220,7 @@ export default function UndervalueScreen() {
 function MarketTab({ label, active, onClick, disabled }: {
   label: string; active: boolean; onClick: () => void; disabled?: boolean;
 }) {
+  const T = useTheme();
   return (
     <button
       onClick={onClick}
@@ -243,6 +245,7 @@ function FilterPanel({ sort, onSort, perMax, onPerMax, pbrMax, onPbrMax, sector,
   sector: string;         onSector: (v: string) => void;
   sectors: string[];
 }) {
+  const T = useTheme();
   return (
     <div style={{
       margin: "0 16px 10px", padding: "14px 16px",
@@ -323,20 +326,22 @@ function FilterPanel({ sort, onSort, perMax, onPerMax, pbrMax, onPbrMax, sector,
 }
 
 function Label({ children }: { children: React.ReactNode }) {
+  const T = useTheme();
   return <div style={{ fontSize: 12, color: T.sub, marginBottom: 8 }}>{children}</div>;
 }
 
 // ─── 종목 로고 ────────────────────────────────────────────────────────────────
 export function StockLogo({ code, score }: { code: string; score: number | null }) {
+  const T = useTheme();
   const [failed, setFailed] = useState(false);
-  const color = scoreColor(score);
+  const color = scoreColor(score, T);
   const rounded = score != null ? Math.round(score) : null;
 
   if (failed) {
     return (
       <div style={{
         width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
-        background: scoreBg(score),
+        background: scoreBg(score, T),
         border: `2px solid ${color}`,
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
       }}>
@@ -381,7 +386,8 @@ function StockCard({ item, isWatched, onToggle, onClick }: {
   onToggle: (code: string, currently: boolean) => void;
   onClick: () => void;
 }) {
-  const rate = fmtRate(item.changeRate);
+  const T = useTheme();
+  const rate = fmtRate(item.changeRate, T);
 
   return (
     <div
@@ -430,6 +436,7 @@ function StockCard({ item, isWatched, onToggle, onClick }: {
 
 // ─── 공통 상태 UI ─────────────────────────────────────────────────────────────
 function Empty({ icon, msg }: { icon: string; msg: string }) {
+  const T = useTheme();
   return (
     <div style={{
       height: 280, display: "flex", flexDirection: "column",
@@ -443,6 +450,7 @@ function Empty({ icon, msg }: { icon: string; msg: string }) {
 }
 
 function Loading() {
+  const T = useTheme();
   return (
     <div style={{ height: 280, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ fontSize: 13, color: T.sub }}>불러오는 중…</div>

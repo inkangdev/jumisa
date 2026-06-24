@@ -2,7 +2,7 @@
 // 탭별 실제 화면은 아직 없음 → 콘텐츠 영역은 자리표시 1개로 대체.
 // (탭 화면은 추후 각 담당자가 AppTab id 에 맞춰 끼운다. 대결은 feature/battle.)
 import { useState } from "react";
-import { T } from "../theme";
+import { useTheme, useThemeMode } from "../theme";
 import * as auth from "../api/auth";
 import type { AuthUser } from "../api/auth";
 import BottomNav from "./BottomNav";
@@ -22,6 +22,7 @@ export default function AppShell({
   onLogout: () => void;
   onUserChange: (u: AuthUser) => void;
 }) {
+  const T = useTheme();
   const [tab, setTab] = useState<AppTab>("screener");
   const [aiOpen, setAiOpen] = useState(false);
   const current = NAV.find((n) => n.id === tab)!;
@@ -109,7 +110,8 @@ function Placeholder({
   user: AuthUser;
   onUserChange: (u: AuthUser) => void;
 }) {
-  // 내 정보 탭은 큰 아이콘도 사용자 아바타(동물)로 표시.
+  const T = useTheme();
+  const { mode, toggle } = useThemeMode();
   const bigIcon = tab === "profile" ? user.avatar ?? icon : icon;
   return (
     <div
@@ -132,10 +134,39 @@ function Placeholder({
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, width: "100%", maxWidth: 360 }}>
           <NameEditor user={user} onUserChange={onUserChange} />
           <AvatarEditor user={user} onUserChange={onUserChange} />
+
+          {/* 테마 전환 */}
+          <div style={{ width: "100%" }}>
+            <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>테마</div>
+            <button
+              onClick={toggle}
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                borderRadius: 12,
+                border: `1px solid ${T.border}`,
+                background: T.card2,
+                color: T.text,
+                fontFamily: T.sans,
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span>{mode === "dark" ? "🌙 다크 모드" : "☀️ 라이트 모드"}</span>
+              <span style={{ fontSize: 11, color: T.sub, fontWeight: 400 }}>
+                {mode === "dark" ? "라이트로 전환" : "다크로 전환"}
+              </span>
+            </button>
+          </div>
+
           <button
             onClick={onLogout}
             style={{
-              marginTop: 8,
+              width: "100%",
               padding: "10px 22px",
               borderRadius: 12,
               border: `1px solid ${T.border}`,
@@ -159,6 +190,7 @@ function Placeholder({
 
 // 내 정보 탭의 닉네임 변경. 입력 후 저장 시 서버에 반영하고 사용자 상태를 갱신한다.
 function NameEditor({ user, onUserChange }: { user: AuthUser; onUserChange: (u: AuthUser) => void }) {
+  const T = useTheme();
   const [name, setName] = useState(user.username);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,6 +268,7 @@ function NameEditor({ user, onUserChange }: { user: AuthUser; onUserChange: (u: 
 
 // 내 정보 탭의 이모지(아바타) 변경. 선택 즉시 서버에 저장하고 사용자 상태를 갱신한다.
 function AvatarEditor({ user, onUserChange }: { user: AuthUser; onUserChange: (u: AuthUser) => void }) {
+  const T = useTheme();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

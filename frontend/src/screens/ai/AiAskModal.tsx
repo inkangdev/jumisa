@@ -2,11 +2,12 @@
 // 자유 질문 → 파이썬 'AI 주식전망' 서비스(/ai/ask) 호출 → 전망/매매의견 표시.
 // 주식 관련 질문이 아니면 서버가 거절 메시지를 내려준다.
 import { useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
 import * as ai from "../../api/ai";
 import type { AiAnswer } from "../../api/ai";
 
 export default function AiAskModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const T = useTheme();
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +135,7 @@ export default function AiAskModal({ open, onClose }: { open: boolean; onClose: 
 }
 
 function Badge({ label, value, color, bg }: { label: string; value: string; color: string; bg: string }) {
+  const T = useTheme();
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 3, alignItems: "center", background: bg, border: `1px solid ${color}40`, borderRadius: 10, padding: "8px 12px", minWidth: 64 }}>
       <span style={{ fontSize: 10, color: T.sub }}>{label}</span>
@@ -143,7 +145,7 @@ function Badge({ label, value, color, bg }: { label: string; value: string; colo
 }
 
 function ResultView({ data }: { data: AiAnswer }) {
-  // 처리 못 한 경우(주식 무관/종목 못 찾음 등): 메시지만 노출
+  const T = useTheme();
   if (!data.answer) {
     return (
       <div style={{ marginTop: 14, background: T.amberBg, border: `1px solid ${T.amber}40`, borderRadius: 10, padding: "12px 14px", fontSize: 13, color: T.text }}>

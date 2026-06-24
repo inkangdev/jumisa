@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
 import type { AuthUser } from "../../api/auth";
 import * as battle from "../../api/battle";
 
@@ -30,6 +30,7 @@ const fmtPoint = (n: number) => {
 };
 
 export default function CreateRoom({ onBack, onCreated }: Props) {
+  const T = useTheme();
   const [name, setName] = useState("");
   const [period, setPeriod] = useState("7");
   const [startPoints, setStartPoints] = useState(1_000_000);

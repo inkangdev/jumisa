@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
 import { fetchWatchlist, toggleWatchlist } from "../../api/watchlist";
 import type { ScreenerItem } from "../../api/screener";
 import { StockLogo } from "../undervalue/UndervalueScreen";
@@ -16,7 +16,7 @@ const SORT_OPTS: { v: WatchSort; label: string }[] = [
 function fmtPrice(n: number | null) {
   return n == null ? "-" : n.toLocaleString("ko-KR");
 }
-function fmtRate(r: number | null): { text: string; color: string } {
+function fmtRate(r: number | null, T: ReturnType<typeof useTheme>): { text: string; color: string } {
   if (r == null) return { text: "-", color: T.sub };
   return { text: (r > 0 ? "+" : "") + r.toFixed(1) + "%", color: r > 0 ? T.green : r < 0 ? T.red : T.sub };
 }
@@ -25,6 +25,7 @@ function fmtVal(v: number | null, dec: number) {
 }
 
 export default function WatchlistScreen() {
+  const T = useTheme();
   const [sort, setSort] = useState<WatchSort>("recent");
   const [items, setItems] = useState<ScreenerItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,7 +88,8 @@ export default function WatchlistScreen() {
 }
 
 function WatchCard({ item, onRemove }: { item: ScreenerItem; onRemove: (code: string) => void }) {
-  const rate = fmtRate(item.changeRate);
+  const T = useTheme();
+  const rate = fmtRate(item.changeRate, T);
 
   return (
     <div style={{
@@ -95,7 +97,7 @@ function WatchCard({ item, onRemove }: { item: ScreenerItem; onRemove: (code: st
       padding: "13px 16px",
       borderBottom: `1px solid ${T.border}`,
     }}>
-      <StockLogo code={item.stockCode} score={item.totalScore} />
+      <StockLogo code={item.stockCode} score={item.totalScore ?? null} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: T.text, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -129,6 +131,7 @@ function WatchCard({ item, onRemove }: { item: ScreenerItem; onRemove: (code: st
 }
 
 function Empty({ icon, msg }: { icon: string; msg: string }) {
+  const T = useTheme();
   return (
     <div style={{
       height: 280, display: "flex", flexDirection: "column",
