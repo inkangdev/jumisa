@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
-import { T } from "../theme";
+import { useTheme } from "../theme";
 
 export const AVATARS = ["🐂", "🦅", "🐻", "🦁", "🦊", "🐯", "🦈", "🦋"];
 
 export function Logo() {
+  const T = useTheme();
   return (
     <div style={{ textAlign: "center", marginBottom: 24 }}>
       <div style={{ fontSize: 38, fontWeight: 900, color: T.accent, letterSpacing: -1 }}>JUMISA</div>
@@ -27,6 +28,7 @@ export function Field({
   placeholder?: string;
   onEnter?: () => void;
 }) {
+  const T = useTheme();
   return (
     <div style={{ marginBottom: 10 }}>
       <div style={{ fontSize: 11, color: T.sub, marginBottom: 6 }}>{label}</div>
@@ -53,6 +55,7 @@ export function Field({
 }
 
 export function AvatarPicker({ value, onChange }: { value: string; onChange: (a: string) => void }) {
+  const T = useTheme();
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ fontSize: 11, color: T.sub, marginBottom: 8 }}>내 아바타 선택</div>
@@ -89,6 +92,7 @@ export function PrimaryButton({
   onClick: () => void;
   disabled?: boolean;
 }) {
+  const T = useTheme();
   return (
     <button
       onClick={onClick}
@@ -115,6 +119,7 @@ export function PrimaryButton({
 }
 
 export function ErrorBanner({ message }: { message?: string | null }) {
+  const T = useTheme();
   if (!message) return null;
   return (
     <div
@@ -135,6 +140,7 @@ export function ErrorBanner({ message }: { message?: string | null }) {
 }
 
 export function SwitchLink({ text, action, onClick }: { text: string; action: string; onClick: () => void }) {
+  const T = useTheme();
   return (
     <div style={{ textAlign: "center", marginTop: 16, fontSize: 12, color: T.sub }}>
       {text}{" "}

@@ -1,5 +1,5 @@
 // 하단 4탭 네비게이션. (시안 docs/design/remixed-13412f58.tsx 의 Bottom Nav 이식)
-import { T } from "../theme";
+import { useTheme } from "../theme";
 import { NAV, type AppTab } from "./nav";
 
 export default function BottomNav({
@@ -11,6 +11,7 @@ export default function BottomNav({
   onSelect: (tab: AppTab) => void;
   avatar: string | null;
 }) {
+  const T = useTheme();
   return (
     <div
       style={{

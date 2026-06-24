@@ -2,12 +2,32 @@ import { useEffect, useState } from "react";
 import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
 import AppShell from "./layout/AppShell";
-import { T } from "./theme";
+import { DARK, LIGHT, ThemeContext, useTheme } from "./theme";
+import type { ThemeMode } from "./theme";
 import * as auth from "./api/auth";
 import type { AuthUser } from "./api/auth";
 import { onUnauthorized } from "./api/session";
 
 export default function App() {
+  const saved = (localStorage.getItem("jumisa-theme") ?? "dark") as ThemeMode;
+  const [mode, setMode] = useState<ThemeMode>(saved);
+  const T = mode === "dark" ? DARK : LIGHT;
+  const toggle = () =>
+    setMode((m) => {
+      const next = m === "dark" ? "light" : "dark";
+      localStorage.setItem("jumisa-theme", next);
+      return next;
+    });
+
+  return (
+    <ThemeContext.Provider value={{ T, mode, toggle }}>
+      <AppInner />
+    </ThemeContext.Provider>
+  );
+}
+
+function AppInner() {
+  const T = useTheme();
   const [screen, setScreen] = useState<"login" | "signup">("login");
   const [user, setUser] = useState<AuthUser | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -111,6 +131,7 @@ export default function App() {
 // 부팅 중(세션 확인) 화면. 백엔드 응답 대기 동안 빈 화면(까만 배경)만
 // 보이던 문제를 로고 + 스피너로 대체한다.
 function BootingView() {
+  const T = useTheme();
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 20 }}>
       <div style={{ fontSize: 40 }}>🐂</div>

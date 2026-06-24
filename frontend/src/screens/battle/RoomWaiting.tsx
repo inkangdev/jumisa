@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
 import type { AuthUser } from "../../api/auth";
 import * as battle from "../../api/battle";
 import type { RoomDetail } from "../../api/battle";
@@ -12,6 +12,7 @@ type Props = {
 };
 
 export default function RoomWaiting({ roomId, user, onBack, onStarted }: Props) {
+  const T = useTheme();
   const [room, setRoom] = useState<RoomDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);

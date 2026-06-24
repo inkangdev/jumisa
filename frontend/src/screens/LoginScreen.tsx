@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ErrorBanner, Field, Logo, PrimaryButton, SwitchLink } from "./authUi";
-import { T } from "../theme";
+import { useTheme } from "../theme";
 
 type Props = {
   onLogin: (username: string, password: string) => void;
@@ -10,6 +10,7 @@ type Props = {
 };
 
 export default function LoginScreen({ onLogin, onSwitchToSignup, error, loading }: Props) {
+  const T = useTheme();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 

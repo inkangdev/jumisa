@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
 import type { AuthUser } from "../../api/auth";
 import * as battle from "../../api/battle";
 import type { RankingEntry, MyPortfolio, StockWithPrice } from "../../api/battle";
@@ -42,6 +42,7 @@ const fmtP = (n: number) => n.toLocaleString();
 const rankMedal = (r: number) => (r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : `${r}위`);
 
 export default function ActiveBattle({ roomId, user, onBack }: Props) {
+  const T = useTheme();
   const [tab, setTab] = useState<Tab>("rank");
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [portfolio, setPortfolio] = useState<MyPortfolio | null>(null);
@@ -141,6 +142,7 @@ export default function ActiveBattle({ roomId, user, onBack }: Props) {
 }
 
 function AnimatedRankRow({ p, i, myUsername }: { p: RankingEntry; i: number; myUsername: string }) {
+  const T = useTheme();
   const animatedRate = useCountUp(p.returnRate);
   const isMe = p.username === myUsername;
   const pos = p.returnRate >= 0;
@@ -171,6 +173,7 @@ function AnimatedRankRow({ p, i, myUsername }: { p: RankingEntry; i: number; myU
 }
 
 function RaceTrack({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername: string }) {
+  const T = useTheme();
   const ROW_H = 38;
   const GAP = 8;
   const SLOT = ROW_H + GAP;
@@ -313,6 +316,7 @@ function RankTab({ ranking, myUsername }: { ranking: RankingEntry[]; myUsername:
 }
 
 function MyTab({ portfolio, onGoTrade }: { portfolio: MyPortfolio | null; onGoTrade: () => void }) {
+  const T = useTheme();
   if (!portfolio) return <div style={{ color: T.sub, fontSize: 13 }}>데이터를 불러오는 중...</div>;
   const stockValue = portfolio.holdings.reduce((s, h) => s + h.currentPrice * h.qty, 0);
 
@@ -365,6 +369,7 @@ function TradeTab({ roomId, stocks, portfolio, onTraded }: {
   portfolio: MyPortfolio | null;
   onTraded: () => void;
 }) {
+  const T = useTheme();
   const [selected, setSelected] = useState<StockWithPrice | null>(null);
   const [qty, setQty] = useState(1);
   const [type, setType] = useState<"buy" | "sell">("buy");

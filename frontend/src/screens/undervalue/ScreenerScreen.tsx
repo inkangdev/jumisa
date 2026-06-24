@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
+import type { Theme } from "../../theme";
 import { fetchScreener, type ScreenerItem } from "../../api/screener";
 
 type Sort = "score" | "per" | "pbr";
 
-function scoreColor(s: number) {
+function scoreColor(s: number, T: Theme) {
   return s >= 90 ? T.green : s >= 75 ? T.accent : s >= 60 ? T.amber : T.red;
 }
 
 function StockLogo({ code, score }: { code: string; score: number }) {
+  const T = useTheme();
   const [failed, setFailed] = useState(false);
-  const color = scoreColor(score);
+  const color = scoreColor(score, T);
   const rounded = Math.round(score);
 
   if (failed) {
@@ -57,6 +59,7 @@ function StockLogo({ code, score }: { code: string; score: number }) {
 }
 
 export default function ScreenerScreen() {
+  const T = useTheme();
   const [items, setItems] = useState<ScreenerItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

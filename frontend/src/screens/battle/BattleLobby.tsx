@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { T } from "../../theme";
+import { useTheme } from "../../theme";
 import type { AuthUser } from "../../api/auth";
 import * as battle from "../../api/battle";
 import type { RoomSummary } from "../../api/battle";
@@ -12,6 +12,7 @@ type Props = {
 };
 
 export default function BattleLobby({ onNavigate }: Props) {
+  const T = useTheme();
   const [rooms, setRooms] = useState<{ waiting: RoomSummary[]; active: RoomSummary[]; myWaiting: RoomSummary[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [joinCode, setJoinCode] = useState("");
@@ -163,6 +164,7 @@ function RoomCard({ room, isMyRoom, onJoin, onEnter, joining }: {
   onEnter?: () => void;
   joining?: boolean;
 }) {
+  const T = useTheme();
   const fmtP = (n: number) => {
     if (n >= 1e8) return (n / 1e8).toFixed(1) + "억";
     if (n >= 1e4) return Math.round(n / 1e4) + "만";
