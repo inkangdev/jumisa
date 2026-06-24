@@ -182,6 +182,7 @@ function AnimatedRankRow({ p, i, myUsername, expanded, portfolio, onToggle }: {
 }
 
 function HoldingsPanel({ portfolio }: { portfolio: PortfolioState }) {
+  const T = useTheme();
   if (portfolio === undefined || portfolio === "loading")
     return <div style={{ background: T.bg, border: `1px solid ${T.accent}`, borderTop: "none", borderRadius: "0 0 14px 14px", padding: "10px 14px", fontSize: 12, color: T.sub }}>보유 종목 불러오는 중…</div>;
   if (portfolio === "error")
@@ -347,6 +348,7 @@ function RaceTrack({ ranking, myUsername }: { ranking: RankingEntry[]; myUsernam
 }
 
 function RankTab({ ranking, myUsername, roomId }: { ranking: RankingEntry[]; myUsername: string; roomId: number }) {
+  const T = useTheme();
   const [openId, setOpenId] = useState<number | null>(null);
   const [cache, setCache] = useState<Record<number, PortfolioState>>({});
 
@@ -361,7 +363,7 @@ function RankTab({ ranking, myUsername, roomId }: { ranking: RankingEntry[]; myU
   return (
     <div>
       <RaceTrack ranking={ranking} myUsername={myUsername} />
-      <div style={{ fontSize: 11, color: T.mute, marginBottom: 8 }}>행을 탭하면 보유 종목을 볼 수 있어요</div>
+      <div style={{ fontSize: 11, color: T.mute, marginBottom: 8, fontFamily: T.sans }}>행을 탭하면 보유 종목을 볼 수 있어요</div>
       {ranking.map((p, i) => (
         <AnimatedRankRow
           key={p.memberId}
