@@ -24,6 +24,7 @@ class BatchScheduler(
     private val financeJob: Job,
     private val undervalueScoreJob: Job,
     private val closingJob: Job,
+    private val marketIndexJob: Job,
     private val priceRepository: PriceRepository,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -74,6 +75,16 @@ class BatchScheduler(
             .addLong("runAt", System.currentTimeMillis())
             .toJobParameters()
         jobLauncher.run(closingJob, params)
+    }
+
+    /** 시장 지수 적재: 장 마감 후 15:35 (종가 잡 직후). 코스피/코스닥/코스피200. */
+    @Scheduled(cron = "0 35 15 * * MON-FRI", zone = "Asia/Seoul")
+    fun runMarketIndex() {
+        val params = JobParametersBuilder()
+            .addString("baseDate", LocalDate.now().toString())
+            .addLong("runAt", System.currentTimeMillis())
+            .toJobParameters()
+        jobLauncher.run(marketIndexJob, params)
     }
 
     /** 저평가 점수 산출/적재: 1시간마다(매시 정각). PER30% + PBR30% + EV/EBITDA25% + 성장률15%. */

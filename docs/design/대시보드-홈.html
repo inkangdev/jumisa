@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>주미사 · 대시보드(홈)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ── 주미사 디자인 토큰 (frontend/src/theme.ts 동기화) ── */
+  :root{
+    --bg:#080C18; --card:#0F1628; --card2:#141C30; --border:#1E2A40;
+    --accent:#4F8EF7; --accentL:#7CB3FF; --accentBg:rgba(79,142,247,0.10);
+    --green:#22C77A; --greenBg:rgba(34,199,122,0.10);
+    --red:#F05454; --redBg:rgba(240,84,84,0.10);
+    --amber:#F5A623; --amberBg:rgba(245,166,35,0.10);
+    --purple:#A78BFA; --purpleBg:rgba(167,139,250,0.10);
+    --text:#EDF2FF; --sub:#7A8EAA; --mute:#2E3D55;
+    --mono:'JetBrains Mono',monospace; --sans:'Noto Sans KR',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#04060f;font-family:var(--sans);
+    min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;gap:32px;flex-wrap:wrap;}
+
+  /* 모바일 프레임 */
+  .phone{position:relative;width:100%;max-width:390px;height:800px;background:var(--bg);
+    border-radius:34px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,0.55);
+    border:1px solid var(--border);display:flex;flex-direction:column;}
+
+  /* AI 질문 플로팅 버튼 (AppShell 과 동일) */
+  .ai{position:absolute;top:10px;right:12px;z-index:20;width:40px;height:40px;border-radius:50%;
+    border:none;background:linear-gradient(135deg,var(--accent),var(--purple));color:#fff;
+    font-size:18px;cursor:pointer;box-shadow:0 4px 14px rgba(79,142,247,0.4);}
+
+  /* ── 헤더 ── */
+  .head{padding:14px 16px 4px;flex-shrink:0;}
+  .head .ttl{font-size:17px;font-weight:900;color:var(--text);}
+  .head .sub{font-size:11px;color:var(--sub);margin-top:2px;}
+
+  .body{flex:1;overflow-y:auto;padding:8px 16px 20px;}
+
+  /* 섹션 타이틀 */
+  .secttl{display:flex;align-items:baseline;justify-content:space-between;margin:18px 0 10px;}
+  .secttl .t{font-size:13px;font-weight:800;color:var(--text);}
+  .secttl .more{font-size:11px;color:var(--sub);cursor:pointer;}
+  .secttl:first-child{margin-top:4px;}
+
+  /* ── 주요 지수 (가로 스크롤 카드) ── */
+  .idxrow{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;margin:0 -16px;padding-left:16px;padding-right:16px;
+    scrollbar-width:none;}
+  .idxrow::-webkit-scrollbar{display:none;}
+  .idxcard{flex:0 0 150px;background:var(--card);border:1px solid var(--border);border-radius:16px;
+    padding:13px 14px 10px;}
+  .idxcard .nm{font-size:12px;font-weight:700;color:var(--sub);display:flex;align-items:center;gap:5px;}
+  .idxcard .dot{width:6px;height:6px;border-radius:50%;}
+  .idxcard .vl{font-size:21px;font-weight:900;color:var(--text);font-family:var(--mono);line-height:1.1;margin-top:6px;}
+  .idxcard .chg{font-size:12px;font-weight:700;font-family:var(--mono);margin-top:3px;}
+  .idxcard svg{display:block;margin-top:8px;}
+
+  /* ── 환율 (셀 그리드) ── */
+  .fxgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .fx{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 11px;}
+  .fx .lb{font-size:10px;color:var(--sub);display:flex;align-items:center;gap:3px;}
+  .fx .vl{font-size:15px;font-weight:800;color:var(--text);font-family:var(--mono);margin-top:5px;line-height:1;}
+  .fx .chg{font-size:10px;font-weight:700;font-family:var(--mono);margin-top:4px;}
+
+  /* ── 거래량 상위 ── */
+  .tabs{display:flex;gap:6px;margin-bottom:6px;}
+  .tabs button{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:transparent;
+    color:var(--sub);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);}
+  .tabs button.on{border-color:var(--accent);background:var(--accentBg);color:var(--accentL);}
+
+  .row{display:flex;align-items:center;gap:11px;padding:12px 0;}
+  .row + .row{border-top:1px solid var(--border);}
+  .rank{flex-shrink:0;width:20px;text-align:center;font-size:13px;font-weight:900;color:var(--sub);font-family:var(--mono);}
+  .rank.top{color:var(--accent);}
+  .logo{flex-shrink:0;width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);
+    background:var(--card2);object-fit:cover;}
+  .logo.fb{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;
+    color:var(--sub);font-family:var(--mono);}
+  .info{flex:1;min-width:0;}
+  .info .nm{font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .info .vol{font-size:11px;color:var(--sub);font-family:var(--mono);margin-top:2px;}
+  .pr{text-align:right;flex-shrink:0;}
+  .pr .p{font-size:13px;font-weight:700;color:var(--text);font-family:var(--mono);}
+  .pr .c{font-size:12px;font-weight:600;margin-top:1px;font-family:var(--mono);}
+
+  .up{color:var(--green);} .dn{color:var(--red);}
+
+  .note{margin-top:18px;padding:10px 12px;border-radius:10px;background:var(--card2);
+    border:1px solid var(--border);font-size:11px;color:var(--sub);line-height:1.7;}
+  .note .mono{font-family:var(--mono);}
+
+  /* ── 하단 네비 (BottomNav 동기화 · 홈 탭 추가안) ── */
+  .nav{height:64px;flex-shrink:0;background:var(--card);border-top:1px solid var(--border);
+    display:flex;align-items:center;padding-top:4px;}
+  .nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:transparent;
+    border:none;cursor:pointer;padding:4px 0;}
+  .nav .ic{width:40px;height:26px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .nav button.on .ic{background:var(--accentBg);}
+  .nav .lb{font-size:9px;color:var(--mute);font-weight:400;}
+  .nav button.on .lb{color:var(--accent);font-weight:700;}
+
+  .caption{color:var(--sub);font-family:var(--sans);font-size:13px;max-width:300px;line-height:1.8;}
+  .caption h2{color:var(--text);font-size:16px;margin:0 0 10px;}
+  .caption code{font-family:var(--mono);color:var(--accentL);font-size:12px;}
+  .caption .tag{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:6px;
+    background:var(--card);border:1px solid var(--border);font-size:11px;}
+</style>
+</head>
+<body>
+
+  <div class="phone">
+    <button class="ai" title="AI 주식전망에게 질문">✨</button>
+
+    <!-- 헤더 -->
+    <div class="head">
+      <div class="ttl">오늘의 시장</div>
+      <div class="sub" id="hsub">2026.06.28 (일) · 장 마감</div>
+    </div>
+
+    <div class="body">
+      <!-- 주요 지수 -->
+      <div class="secttl"><div class="t">주요 지수</div><div class="more">전체 ›</div></div>
+      <div class="idxrow" id="idxrow"></div>
+
+      <!-- 환율 -->
+      <div class="secttl"><div class="t">환율</div><div class="more">더보기 ›</div></div>
+      <div class="fxgrid" id="fxgrid"></div>
+
+      <!-- 거래량 상위 -->
+      <div class="secttl"><div class="t">오늘 많이 거래된 종목</div></div>
+      <div class="tabs" id="tabs">
+        <button class="on" data-k="vol">거래량</button>
+        <button data-k="up">상승률</button>
+        <button data-k="dn">하락률</button>
+      </div>
+      <div id="list"></div>
+
+      <div class="note">
+        ⓘ 모든 수치는 디자인 시안용 <strong style="color:var(--sub)">샘플 데이터</strong>입니다.
+        지수·환율은 외부 시세 API, 거래량 순위는 <span class="mono">stock_daily</span> 일별 적재에서
+        집계해 실제 값으로 교체됩니다.
+      </div>
+    </div>
+
+    <!-- 하단 네비 (홈 탭 추가안) -->
+    <div class="nav">
+      <button class="on"><div class="ic">🏠</div><div class="lb">홈</div></button>
+      <button><div class="ic">🔍</div><div class="lb">스크리너</div></button>
+      <button><div class="ic" style="font-size:18px">⚔️</div><div class="lb">대결</div></button>
+      <button><div class="ic">⭐</div><div class="lb">관심종목</div></button>
+      <button><div class="ic">🐂</div><div class="lb">내 정보</div></button>
+    </div>
+  </div>
+
+  <div class="caption">
+    <h2>대시보드 · 홈</h2>
+    증권 앱 첫 화면처럼 "오늘 시장 한눈에" 를 담은 새 탭 시안입니다.<br><br>
+    <div>
+      <span class="tag">📈 주요 지수</span>
+      <span class="tag">💱 환율</span>
+      <span class="tag">🔥 거래량 상위</span>
+    </div>
+    <br>
+    · <strong style="color:var(--text)">주요 지수</strong> — 코스피·코스닥·코스피200 카드(현재가·등락·미니 스파크라인), 가로 스크롤<br>
+    · <strong style="color:var(--text)">환율</strong> — 달러·엔(100)·유로 셀<br>
+    · <strong style="color:var(--text)">거래량 상위</strong> — 종목 로고·거래량·등락률 리스트.
+    <code>거래량 / 상승률 / 하락률</code> 토글<br>
+    · 하단 네비에 <strong style="color:var(--text)">홈</strong> 탭 추가안 포함<br><br>
+    스크리너 행 스타일·테마 토큰을 그대로 따랐고, 정적 HTML 단독 시안이라 앱 코드와 분리되어 있습니다.
+  </div>
+
+<script>
+  const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const fmt=n=>n.toLocaleString("ko-KR");
+
+  // ── 결정적 난수 (시안용 스파크라인) ──
+  function rng(seed){let s=seed||1;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
+  function spark(seed,up,w,h){
+    const r=rng(seed),n=24,pts=[1];
+    for(let i=1;i<n;i++)pts.push(pts[i-1]*(1+((r()-0.5)*0.04+(up?0.002:-0.002))));
+    const mn=Math.min(...pts),mx=Math.max(...pts),sp=(mx-mn)||1;
+    const X=i=>(i/(n-1))*w, Y=v=>h-((v-mn)/sp)*h;
+    const line=pts.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1)).join(" ");
+    const col=up?css("--green"):css("--red");
+    const area=line+` L${w},${h} L0,${h} Z`;
+    return `<svg width="${w}" height="${h}">
+      <defs><linearGradient id="g${seed}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${col}" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="${col}" stop-opacity="0"/></linearGradient></defs>
+      <path d="${area}" fill="url(#g${seed})"/>
+      <path d="${line}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+  }
+
+  // ── 주요 지수 ──
+  const INDICES=[
+    {nm:"코스피",   val:2718.43, diff:14.27, color:"--green", up:true,  seed:11},
+    {nm:"코스닥",   val:842.16,  diff:-3.85, color:"--red",   up:false, seed:22},
+    {nm:"코스피200",val:362.91,  diff:1.92,  color:"--green", up:true,  seed:33},
+  ];
+  document.getElementById("idxrow").innerHTML=INDICES.map(x=>{
+    const rate=x.diff/(x.val-x.diff)*100, cls=x.up?"up":"dn", sign=x.up?"+":"";
+    return `<div class="idxcard">
+      <div class="nm"><span class="dot" style="background:var(${x.color})"></span>${x.nm}</div>
+      <div class="vl">${x.val.toFixed(2)}</div>
+      <div class="chg ${cls}">${x.up?"▲":"▼"} ${Math.abs(x.diff).toFixed(2)} (${sign}${rate.toFixed(2)}%)</div>
+      ${spark(x.seed,x.up,122,30)}
+    </div>`;
+  }).join("");
+
+  // ── 환율 ──
+  const FX=[
+    {lb:"🇺🇸 달러",   vl:"1,378.50", chg:"+4.20", up:true},
+    {lb:"🇯🇵 엔(100)",vl:"905.32",   chg:"-1.84", up:false},
+    {lb:"🇪🇺 유로",   vl:"1,486.10", chg:"+2.05", up:true},
+  ];
+  document.getElementById("fxgrid").innerHTML=FX.map(x=>`
+    <div class="fx">
+      <div class="lb">${x.lb}</div>
+      <div class="vl">${x.vl}</div>
+      <div class="chg ${x.up?"up":"dn"}">${x.up?"▲":"▼"} ${x.chg.replace(/[-+]/,"")}</div>
+    </div>`).join("");
+
+  // ── 거래량 상위 (탭별 샘플) ──
+  const DATA={
+    vol:[
+      {code:"005930",nm:"삼성전자",     p:74300, c:1.78,  vol:"18,420,331"},
+      {code:"000660",nm:"SK하이닉스",   p:201500,c:3.42,  vol:"6,113,902"},
+      {code:"373220",nm:"LG에너지솔루션",p:312000,c:-2.15, vol:"1,884,560"},
+      {code:"035720",nm:"카카오",       p:41250, c:-1.08, vol:"5,902,114"},
+      {code:"247540",nm:"에코프로비엠",  p:128400,c:5.61,  vol:"4,221,870"},
+      {code:"196170",nm:"알테오젠",     p:312500,c:2.34,  vol:"1,402,338"},
+    ],
+    up:[
+      {code:"247540",nm:"에코프로비엠",  p:128400,c:5.61,  vol:"4,221,870"},
+      {code:"000660",nm:"SK하이닉스",   p:201500,c:3.42,  vol:"6,113,902"},
+      {code:"196170",nm:"알테오젠",     p:312500,c:2.34,  vol:"1,402,338"},
+      {code:"005930",nm:"삼성전자",     p:74300, c:1.78,  vol:"18,420,331"},
+      {code:"068270",nm:"셀트리온",     p:178900,c:1.21,  vol:"912,440"},
+      {code:"005380",nm:"현대차",       p:94400, c:0.96,  vol:"1,120,557"},
+    ],
+    dn:[
+      {code:"373220",nm:"LG에너지솔루션",p:312000,c:-2.15, vol:"1,884,560"},
+      {code:"035720",nm:"카카오",       p:41250, c:-1.08, vol:"5,902,114"},
+      {code:"035420",nm:"NAVER",       p:168500,c:-0.94, vol:"1,330,201"},
+      {code:"105560",nm:"KB금융",      p:79800, c:-0.62, vol:"888,012"},
+      {code:"051910",nm:"LG화학",      p:298500,c:-0.41, vol:"640,233"},
+      {code:"012330",nm:"현대모비스",   p:241000,c:-0.18, vol:"402,118"},
+    ],
+  };
+
+  function renderList(k){
+    document.getElementById("list").innerHTML=DATA[k].map((s,i)=>{
+      const up=s.c>=0, cls=up?"up":"dn", sign=up?"+":"";
+      const img=`https://file.alphasquare.co.kr/media/images/stock_logo/kr/${s.code}.png`;
+      return `<div class="row">
+        <div class="rank ${i<3?"top":""}">${i+1}</div>
+        <img class="logo" src="${img}" alt="${s.nm}"
+          onerror="this.outerHTML='<div class=\\'logo fb\\'>${s.nm.slice(0,2)}</div>'"/>
+        <div class="info">
+          <div class="nm">${s.nm}</div>
+          <div class="vol">거래량 ${s.vol}주</div>
+        </div>
+        <div class="pr">
+          <div class="p">${fmt(s.p)}</div>
+          <div class="c ${cls}">${up?"▲":"▼"} ${sign}${s.c.toFixed(2)}%</div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  renderList("vol");
+
+  document.getElementById("tabs").addEventListener("click",e=>{
+    const b=e.target.closest("button");if(!b)return;
+    [...e.currentTarget.children].forEach(x=>x.classList.toggle("on",x===b));
+    renderList(b.dataset.k);
+  });
+</script>
+</body>
+</html>
