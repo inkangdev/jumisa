@@ -134,6 +134,40 @@ class KisClient(
         }
     }
 
+    /**
+     * 국내업종 현재지수 (TR: FHPUP02100000). 실패 시 null.
+     * indexCode: 0001 코스피 / 1001 코스닥 / 2001 코스피200. 시장구분 코드 "U".
+     */
+    fun indexPrice(indexCode: String): IndexPrice? {
+        rateLimiter.acquire()
+        val body = rest.get()
+            .uri {
+                it.path("/uapi/domestic-stock/v1/quotations/inquire-index-price")
+                    .queryParam("fid_cond_mrkt_div_code", "U")
+                    .queryParam("fid_input_iscd", indexCode)
+                    .build()
+            }
+            .header("authorization", "Bearer ${accessToken()}")
+            .header("appkey", props.appKey)
+            .header("appsecret", props.appSecret)
+            .header("tr_id", "FHPUP02100000")
+            .retrieve()
+            .body(String::class.java) ?: return null
+
+        return try {
+            val resp = objectMapper.readValue(body, InquireIndexResponse::class.java)
+            if (resp.rtCd != "0") {
+                log.warn("[{}] 지수 조회 실패 rt_cd={} {}", indexCode, resp.rtCd, resp.msg)
+                null
+            } else {
+                resp.output
+            }
+        } catch (e: Exception) {
+            log.warn("[{}] 지수 응답 파싱 실패: {}", indexCode, e.message)
+            null
+        }
+    }
+
     /** dev 디버깅용 raw JSON. */
     fun currentPriceRaw(stockCode: String): String {
         rateLimiter.acquire()

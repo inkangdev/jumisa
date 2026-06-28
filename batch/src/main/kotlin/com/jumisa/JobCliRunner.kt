@@ -33,6 +33,7 @@ class JobCliRunner(
         "finance"     to "financeJob",
         "undervalue"  to "undervalueScoreJob",
         "closing"     to "closingJob",
+        "index"       to "marketIndexJob",
         "historyFill" to "historyFillJob",
     )
 
@@ -54,7 +55,7 @@ class JobCliRunner(
                 val now = System.currentTimeMillis()
                 pb.addLong("snapshotAt", now - (now % (5 * 60_000L)))   // 5분 격자
             }
-            if (beanName == "closingJob") {
+            if (beanName == "closingJob" || beanName == "marketIndexJob") {
                 pb.addString("baseDate", LocalDate.now().toString())
             }
             log.info("CLI 잡 실행 시작: {}", beanName)

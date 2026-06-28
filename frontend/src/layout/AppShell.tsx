@@ -9,6 +9,7 @@ import BottomNav from "./BottomNav";
 import { NAV, type AppTab } from "./nav";
 import BattleTab from "../screens/battle/BattleTab";
 import AiAskModal from "../screens/ai/AiAskModal";
+import DashboardScreen from "../screens/dashboard/DashboardScreen";
 import UndervalueScreen from "../screens/undervalue/UndervalueScreen";
 import WatchlistScreen from "../screens/watchlist/WatchlistScreen";
 import { AvatarPicker } from "../screens/authUi";
@@ -23,7 +24,7 @@ export default function AppShell({
   onUserChange: (u: AuthUser) => void;
 }) {
   const T = useTheme();
-  const [tab, setTab] = useState<AppTab>("screener");
+  const [tab, setTab] = useState<AppTab>("home");
   const [aiOpen, setAiOpen] = useState(false);
   const current = NAV.find((n) => n.id === tab)!;
 
@@ -75,7 +76,9 @@ export default function AppShell({
 
         {/* 콘텐츠 영역 (탭 화면 자리) */}
         <div style={{ flex: 1, overflow: "auto" }}>
-          {tab === "screener" ? (
+          {tab === "home" ? (
+            <DashboardScreen />
+          ) : tab === "screener" ? (
             <UndervalueScreen />
           ) : tab === "battle" ? (
             <BattleTab user={user} />

@@ -62,3 +62,25 @@ data class DailyChartResponse(
     @JsonProperty("msg1")    val msg: String?,
     @JsonProperty("output2") val output2: List<DailyChartItem>?,
 )
+
+/** 국내업종 현재지수(FHPUP02100000) 응답 래퍼 */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class InquireIndexResponse(
+    @JsonProperty("rt_cd")  val rtCd: String?,
+    @JsonProperty("msg1")   val msg: String?,
+    @JsonProperty("output") val output: IndexPrice?,
+)
+
+/** 지수 현재가 output. 숫자는 문자열로 와서 매핑 단계에서 변환한다. */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class IndexPrice(
+    @JsonProperty("bstp_nmix_prpr")      val price: String?,       // 업종 지수 현재가
+    @JsonProperty("bstp_nmix_prdy_vrss") val diff: String?,        // 전일 대비
+    @JsonProperty("prdy_vrss_sign")      val sign: String?,        // 전일 대비 부호
+    @JsonProperty("bstp_nmix_prdy_ctrt") val changeRate: String?,  // 전일 대비율(등락률)
+    @JsonProperty("bstp_nmix_oprc")      val open: String?,        // 시가 지수
+    @JsonProperty("bstp_nmix_hgpr")      val high: String?,        // 최고가 지수
+    @JsonProperty("bstp_nmix_lwpr")      val low: String?,         // 최저가 지수
+    @JsonProperty("acml_vol")            val volume: String?,      // 누적 거래량
+    @JsonProperty("acml_tr_pbmn")        val tradeAmount: String?, // 누적 거래대금
+)
