@@ -77,17 +77,23 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 데이터는 서버에서 장중 5분마다 갱신(시세 스냅샷·지수). 화면도 60초마다 조용히 재요청해
+  // 안 눌러도 최신값이 반영되게 한다. 폴링 실패는 기존 데이터를 유지하고 무시(스피너 깜빡임 방지).
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    fetchDashboard(rank)
-      .then((r) => {
-        if (!alive) return;
-        if (r.ok) { setData(r.data); setError(null); }
-        else setError(r.error);
-      })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
+    const load = (initial: boolean) => {
+      if (initial) setLoading(true);
+      fetchDashboard(rank)
+        .then((r) => {
+          if (!alive) return;
+          if (r.ok) { setData(r.data); setError(null); }
+          else if (initial) setError(r.error);
+        })
+        .finally(() => { if (alive && initial) setLoading(false); });
+    };
+    load(true);
+    const id = setInterval(() => load(false), 60_000);
+    return () => { alive = false; clearInterval(id); };
   }, [rank]);
 
   const indices = data?.indices ?? [];
