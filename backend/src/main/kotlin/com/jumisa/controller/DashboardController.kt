@@ -27,7 +27,7 @@ class DashboardController(
             indices = repo.findIndices(),
             rank = kind,
             ranking = repo.findRanking(kind, capped),
-            baseDate = repo.latestDailyDate(),
+            baseDate = repo.latestRankingDate(),
         )
     }
 }
