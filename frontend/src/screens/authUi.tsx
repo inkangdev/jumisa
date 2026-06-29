@@ -8,7 +8,7 @@ export function Logo() {
   return (
     <div style={{ textAlign: "center", marginBottom: 24 }}>
       <div style={{ fontSize: 38, fontWeight: 900, color: T.accent, letterSpacing: -1 }}>JUMISA</div>
-      <div style={{ fontSize: 12, color: T.sub, marginTop: 4 }}>주식에 미친 사람들 📈</div>
+      <div style={{ fontSize: 12, color: T.sub, marginTop: 4 }}>주미사 📈</div>
     </div>
   );
 }
