@@ -79,8 +79,8 @@ class BatchScheduler(
         jobLauncher.run(closingJob, params)
     }
 
-    /** 시장 지수 적재: 장 마감 후 15:35 (종가 잡 직후). 코스피/코스닥/코스피200. */
-    @Scheduled(cron = "0 35 15 * * MON-FRI", zone = "Asia/Seoul")
+    /** 시장 지수 적재: 장중(09~15시) 5분 간격 실시간(같은 날 행 upsert). 마지막 회차가 종가가 됨. 코스피/코스닥/코스피200. */
+    @Scheduled(cron = "0 */5 9-15 * * MON-FRI", zone = "Asia/Seoul")
     fun runMarketIndex() {
         val params = JobParametersBuilder()
             .addString("baseDate", LocalDate.now(KST).toString())
