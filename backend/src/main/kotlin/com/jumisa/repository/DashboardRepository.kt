@@ -34,36 +34,39 @@ class DashboardRepository(private val jdbc: JdbcTemplate) {
         }
 
     /**
-     * 최신 기준일의 거래량/등락 랭킹 상위.
-     * rank: "up" 등락률 내림차순, "down" 등락률 오름차순, 그 외(vol) 거래량 내림차순.
-     * 등락률은 전일 종가 대비로 산출(스크리너와 동일 방식).
+     * 당일(실시간) 거래량/등락 랭킹 상위 — stock_price_snapshot 기준.
+     * rank: "up" 등락률 내림차순, "down" 등락률 오름차순, 그 외(vol) 당일 누적거래량 내림차순.
+     *
+     * '최신 스냅샷일'(=오늘 장중이면 오늘, 아니면 마지막 거래일)에 대해 종목별 최신 스냅샷 1건 사용.
+     * change_rate(전일대비등락률)·accum_volume(당일 누적거래량)은 KIS 제공값이라 그대로 정확
+     * → 증권사 앱과 동일한 권위 데이터. 인위적 ±30% 컷은 두지 않음(거래재개·신규상장 등 정상
+     *   초과치를 가려 오히려 증권사와 달라짐). 과거 stock_daily 계산 방식은 일자 커버리지 공백 시
+     *   비연속 거래일과 비교돼 등락률이 왜곡됐던 문제(상한가 30% 초과 가짜값)가 있었음.
      */
     fun findRanking(rank: String, limit: Int): List<RankItem> {
         val orderBy = when (rank) {
             "up"   -> "change_rate DESC NULLS LAST"
             "down" -> "change_rate ASC NULLS LAST"
-            else   -> "d.volume DESC NULLS LAST"
+            else   -> "accum_volume DESC NULLS LAST"
         }
         val sql = """
+            WITH latest_day AS (
+                SELECT max((snapshot_at AT TIME ZONE 'Asia/Seoul')::date) AS d
+                FROM stock_price_snapshot
+            ),
+            latest_snap AS (
+                SELECT DISTINCT ON (sp.stock_code)
+                       sp.stock_code, sp.current_price, sp.change_rate, sp.accum_volume
+                FROM stock_price_snapshot sp, latest_day
+                WHERE (sp.snapshot_at AT TIME ZONE 'Asia/Seoul')::date = latest_day.d
+                ORDER BY sp.stock_code, sp.snapshot_at DESC
+            )
             SELECT s.stock_code, s.name, s.market,
-                   d.close_price AS current_price,
-                   d.volume,
-                   CASE WHEN dp.prev_price > 0
-                        THEN round(((d.close_price - dp.prev_price)::numeric / dp.prev_price * 100), 2)
-                        ELSE NULL END AS change_rate
-            FROM stock s
-            JOIN LATERAL (
-                SELECT close_price, volume, base_date
-                FROM stock_daily WHERE stock_code = s.stock_code
-                ORDER BY base_date DESC LIMIT 1
-            ) d ON true
-            LEFT JOIN LATERAL (
-                SELECT close_price AS prev_price
-                FROM stock_daily WHERE stock_code = s.stock_code AND base_date < d.base_date
-                ORDER BY base_date DESC LIMIT 1
-            ) dp ON true
-            WHERE s.is_tradable
-              AND d.base_date = (SELECT MAX(base_date) FROM stock_daily)
+                   ls.current_price,
+                   ls.accum_volume AS volume,
+                   ls.change_rate
+            FROM latest_snap ls
+            JOIN stock s ON s.stock_code = ls.stock_code AND s.is_tradable
             ORDER BY $orderBy
             LIMIT ?
         """.trimIndent()
@@ -83,8 +86,10 @@ class DashboardRepository(private val jdbc: JdbcTemplate) {
         }, limit)
     }
 
-    /** 랭킹 기준일(최신 stock_daily 일자). */
-    fun latestDailyDate(): String? =
-        jdbc.queryForList("SELECT MAX(base_date)::text FROM stock_daily", String::class.java)
-            .firstOrNull()
+    /** 랭킹 기준일(최신 스냅샷 일자, KST). 랭킹이 스냅샷 기반이므로 동일 소스로 일자 표기. */
+    fun latestRankingDate(): String? =
+        jdbc.queryForList(
+            "SELECT max((snapshot_at AT TIME ZONE 'Asia/Seoul')::date)::text FROM stock_price_snapshot",
+            String::class.java,
+        ).firstOrNull()
 }
