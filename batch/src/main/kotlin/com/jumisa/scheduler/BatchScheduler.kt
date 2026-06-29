@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * 배치 스케줄러 (Asia/Seoul, 주말 제외). 기본 비활성:
@@ -31,6 +32,7 @@ class BatchScheduler(
 
     private companion object {
         const val SNAPSHOT_BUCKET_MS = 5 * 60_000L   // 시세 스냅샷 5분 격자
+        val KST: ZoneId = ZoneId.of("Asia/Seoul")    // baseDate 는 KST 기준 (컨테이너 TZ=UTC 보정)
     }
 
     /** 종목 마스터 갱신: 장 시작 전. */
@@ -71,7 +73,7 @@ class BatchScheduler(
     @Scheduled(cron = "0 30 15 * * MON-FRI", zone = "Asia/Seoul")
     fun runClosing() {
         val params = JobParametersBuilder()
-            .addString("baseDate", LocalDate.now().toString())
+            .addString("baseDate", LocalDate.now(KST).toString())
             .addLong("runAt", System.currentTimeMillis())
             .toJobParameters()
         jobLauncher.run(closingJob, params)
@@ -81,7 +83,7 @@ class BatchScheduler(
     @Scheduled(cron = "0 35 15 * * MON-FRI", zone = "Asia/Seoul")
     fun runMarketIndex() {
         val params = JobParametersBuilder()
-            .addString("baseDate", LocalDate.now().toString())
+            .addString("baseDate", LocalDate.now(KST).toString())
             .addLong("runAt", System.currentTimeMillis())
             .toJobParameters()
         jobLauncher.run(marketIndexJob, params)

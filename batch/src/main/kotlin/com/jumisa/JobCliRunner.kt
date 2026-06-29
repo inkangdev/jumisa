@@ -11,6 +11,7 @@ import org.springframework.boot.SpringApplication
 import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.stereotype.Component
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.system.exitProcess
 
 /**
@@ -56,7 +57,8 @@ class JobCliRunner(
                 pb.addLong("snapshotAt", now - (now % (5 * 60_000L)))   // 5분 격자
             }
             if (beanName == "closingJob" || beanName == "marketIndexJob") {
-                pb.addString("baseDate", LocalDate.now().toString())
+                // baseDate 는 KST 기준 (컨테이너 TZ=UTC 라 LocalDate.now() 만 쓰면 새벽 수동 실행 시 전날로 박힘)
+                pb.addString("baseDate", LocalDate.now(ZoneId.of("Asia/Seoul")).toString())
             }
             log.info("CLI 잡 실행 시작: {}", beanName)
             val exec = jobLauncher.run(job, pb.toJobParameters())
